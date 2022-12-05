@@ -9,7 +9,7 @@ pub struct Material {
 }
 
 #[derive(ugli::Vertex, Debug, Copy, Clone)]
-pub struct Vertex {
+pub struct ObjVertex {
     pub a_v: Vec3<f32>,
     pub a_uv: Vec2<f32>,
     pub a_vn: Vec3<f32>,
@@ -17,7 +17,7 @@ pub struct Vertex {
 
 pub struct ObjMesh {
     pub name: String,
-    pub geometry: ugli::VertexBuffer<Vertex>,
+    pub geometry: ugli::VertexBuffer<ObjVertex>,
     pub material: Material,
 }
 
@@ -85,7 +85,7 @@ impl geng::LoadAsset for Obj {
                             s => Some(s.parse().unwrap()),
                         };
                         let i_vn: Option<usize> = parts.next().map(|s| s.parse().unwrap());
-                        Vertex {
+                        ObjVertex {
                             a_v: v[i_v - 1],
                             a_vn: i_vn.map(|i| vn[i - 1]).unwrap_or(Vec3::ZERO),
                             a_uv: match i_uv {
