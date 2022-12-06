@@ -1,48 +1,30 @@
+use geng::net::simple as simple_net;
 use geng::prelude::*;
 
+pub mod assets;
 pub mod camera;
+pub mod interpolation;
+pub mod model;
 pub mod obj;
 pub mod util;
 
+pub use assets::*;
 pub use camera::*;
+pub use interpolation::*;
+pub use model::*;
 pub use obj::*;
 pub use util::*;
 
-#[derive(geng::Assets)]
-pub struct Shaders {
-    pub water: ugli::Program,
-    pub obj: ugli::Program,
-    pub obj2: ugli::Program,
-}
-
-#[derive(geng::Assets, Serialize, Deserialize)]
-#[asset(json)]
-pub struct Config {
-    pub sea_color: Rgba<f32>,
-}
-
-#[derive(geng::Assets)]
-pub struct Assets {
-    pub shaders: Shaders,
-    #[asset(path = "1391 Rowboat.obj")]
-    pub boat: Obj,
-    pub bobber: ugli::Texture,
-    pub player: ugli::Texture,
-    pub config: Config,
-    #[asset(path = "PerlinNoise.png", postprocess = "make_repeated")]
-    pub surface_noise: ugli::Texture,
-    #[asset(path = "WaterDistortion.png", postprocess = "make_repeated")]
-    pub distort_noise: ugli::Texture,
-}
-
 pub struct Player {
-    pub pos: Vec2<f32>,
-    pub rot: f32,
+    pub pos: Position,
     pub target_pos: Vec2<f32>,
     pub fishing_pos: Option<Vec2<f32>>,
 }
 
 pub struct Game {
+    player_id: Id,
+    model: simple_net::Remote<Model>,
+    interpolated: HashMap<Id, InterpolatedPosition>,
     framebuffer_size: Vec2<f32>,
     camera: Camera,
     geng: Geng,
@@ -51,11 +33,20 @@ pub struct Game {
     white_texture: ugli::Texture,
     player: Player,
     quad: ugli::VertexBuffer<ObjVertex>,
+    ping_time: f32,
+    send_ping: bool,
 }
 
 impl Game {
-    pub fn new(geng: &Geng, assets: &Rc<Assets>) -> Self {
+    pub fn new(
+        geng: &Geng,
+        assets: &Rc<Assets>,
+        player_id: Id,
+        model: simple_net::Remote<Model>,
+    ) -> Self {
         Self {
+            player_id,
+            model,
             time: 0.0,
             framebuffer_size: vec2(1.0, 1.0),
             geng: geng.clone(),
@@ -69,9 +60,12 @@ impl Game {
             },
             white_texture: ugli::Texture::new_with(geng.ugli(), vec2(1, 1), |_| Rgba::WHITE),
             player: Player {
-                pos: Vec2::ZERO,
+                pos: Position {
+                    pos: Vec2::ZERO,
+                    vel: Vec2::ZERO,
+                    rot: 0.0,
+                },
                 target_pos: Vec2::ZERO,
-                rot: 0.0,
                 fishing_pos: None,
             },
             quad: ugli::VertexBuffer::new_static(
@@ -99,6 +93,9 @@ impl Game {
                     },
                 ],
             ),
+            interpolated: HashMap::new(),
+            ping_time: 0.0,
+            send_ping: false,
         }
     }
 
@@ -158,21 +155,14 @@ impl Game {
         let camera_ray = self.camera.pixel_ray(self.framebuffer_size, mouse_pos);
         camera_ray.from.xy() - camera_ray.dir.xy() * camera_ray.from.z / camera_ray.dir.z
     }
-}
 
-impl geng::State for Game {
-    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        self.framebuffer_size = framebuffer.size().map(|x| x as f32);
-        ugli::clear(
-            framebuffer,
-            Some(self.assets.config.sea_color),
-            Some(1.0),
-            None,
-        );
-
-        // Drawing player
-        let model_matrix =
-            Mat4::translate(self.player.pos.extend(0.0)) * Mat4::rotate_z(self.player.rot);
+    pub fn draw_player(
+        &self,
+        framebuffer: &mut ugli::Framebuffer,
+        pos: &Position,
+        fishing_pos: Option<Vec2<f32>>,
+    ) {
+        let model_matrix = Mat4::translate(pos.pos.extend(0.0)) * Mat4::rotate_z(pos.rot);
         for mesh in &self.assets.boat.meshes {
             ugli::draw(
                 framebuffer,
@@ -194,13 +184,13 @@ impl geng::State for Game {
         }
         self.draw_quad(
             framebuffer,
-            Mat4::translate(self.player.pos.extend(0.0))
+            Mat4::translate(pos.pos.extend(0.0))
                 * Mat4::rotate_x(-self.camera.rot_v)
                 * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
                 * Mat4::translate(vec3(0.0, 0.0, 1.0)),
             &self.assets.player,
         );
-        if let Some(pos) = self.player.fishing_pos {
+        if let Some(pos) = fishing_pos {
             self.draw_quad(
                 framebuffer,
                 Mat4::translate(pos.extend(0.0))
@@ -208,6 +198,28 @@ impl geng::State for Game {
                     * Mat4::rotate_x(-self.camera.rot_v),
                 &self.assets.bobber,
             );
+        }
+    }
+}
+
+impl geng::State for Game {
+    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        self.framebuffer_size = framebuffer.size().map(|x| x as f32);
+        ugli::clear(
+            framebuffer,
+            Some(self.assets.config.sea_color),
+            Some(1.0),
+            None,
+        );
+
+        // Drawing player
+        self.draw_player(framebuffer, &self.player.pos, self.player.fishing_pos);
+        for (id, pos) in &self.interpolated {
+            if *id == self.player_id {
+                continue;
+            }
+            let pos = pos.get();
+            self.draw_player(framebuffer, &pos, None);
         }
 
         let mut depth_texture =
@@ -224,8 +236,8 @@ impl geng::State for Game {
             );
             let framebuffer = &mut framebuffer;
             ugli::clear(framebuffer, Some(Rgba::TRANSPARENT_BLACK), Some(1.0), None);
-            let model_matrix =
-                Mat4::translate(self.player.pos.extend(0.0)) * Mat4::rotate_z(self.player.rot);
+            let model_matrix = Mat4::translate(self.player.pos.pos.extend(0.0))
+                * Mat4::rotate_z(self.player.pos.rot);
             for mesh in &self.assets.boat.meshes {
                 ugli::draw(
                     framebuffer,
@@ -247,7 +259,7 @@ impl geng::State for Game {
             }
             self.draw_quad2(
                 framebuffer,
-                Mat4::translate(self.player.pos.extend(0.0))
+                Mat4::translate(self.player.pos.pos.extend(0.0))
                     * Mat4::rotate_x(-self.camera.rot_v)
                     * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
                     * Mat4::translate(vec3(0.0, 0.0, 1.0)),
@@ -309,14 +321,65 @@ impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
         let delta_time = delta_time as f32;
 
+        let events = self.model.update();
+        for i in self.interpolated.values_mut() {
+            i.update(delta_time);
+        }
+        for event in events {
+            match event {
+                Event::Pong => {
+                    self.model.send(Message::Update(self.player.pos.clone()));
+                    {
+                        let model = self.model.get();
+                        self.interpolated
+                            .retain(|id, _| model.positions.contains_key(id));
+                        for (id, pos) in &model.positions {
+                            if let Some(i) = self.interpolated.get_mut(id) {
+                                i.server_update(pos);
+                            } else {
+                                self.interpolated
+                                    .insert(*id, InterpolatedPosition::new(pos));
+                            }
+                        }
+                    }
+                    self.send_ping = true;
+                }
+            }
+        }
+        self.ping_time += delta_time;
+        if self.ping_time > 1.0 / <Model as simple_net::Model>::TICKS_PER_SECOND && self.send_ping {
+            self.ping_time = 0.0;
+            self.send_ping = false;
+            self.model.send(Message::Ping);
+        }
+
         self.time += delta_time;
 
         // Player move
-        let delta_pos = self.player.target_pos - self.player.pos;
+        let mut wasd = Vec2::<f32>::ZERO;
+        if self.geng.window().is_key_pressed(geng::Key::W) {
+            wasd.y += 1.0;
+        }
+        if self.geng.window().is_key_pressed(geng::Key::A) {
+            wasd.x -= 1.0;
+        }
+        if self.geng.window().is_key_pressed(geng::Key::S) {
+            wasd.y -= 1.0;
+        }
+        if self.geng.window().is_key_pressed(geng::Key::D) {
+            wasd.x += 1.0;
+        }
+        if wasd != Vec2::ZERO {
+            self.player.target_pos = self.player.pos.pos + wasd;
+        }
+        let delta_pos = self.player.target_pos - self.player.pos.pos;
         if delta_pos.len() > 0.5 {
-            self.player.pos += delta_pos.clamp_len(..=delta_time);
-            self.player.rot +=
-                normalize_angle(delta_pos.arg() - self.player.rot).clamp_abs(delta_time);
+            self.player.pos.vel = delta_pos.normalize();
+            self.player.pos.pos += delta_pos.clamp_len(..=delta_time);
+            self.player.pos.rot +=
+                normalize_angle(delta_pos.arg() - self.player.pos.rot).clamp_abs(5.0 * delta_time);
+        } else {
+            self.player.pos.vel = Vec2::ZERO;
         }
     }
 
@@ -346,21 +409,25 @@ impl geng::State for Game {
 fn main() {
     logger::init().unwrap();
     geng::setup_panic_handler();
-    let geng = Geng::new("Sea of Friends");
-    geng::run(
-        &geng,
-        geng::LoadingScreen::new(
-            &geng,
-            geng::EmptyLoadingScreen,
-            geng::LoadAsset::load(&geng, &static_path().join("assets")),
-            {
-                let geng = geng.clone();
-                move |assets| {
-                    let assets = assets.unwrap();
-                    let assets = Rc::new(assets);
-                    Game::new(&geng, &assets)
-                }
-            },
-        ),
-    )
+    // let geng = Geng::new("Sea of Friends");
+    simple_net::run(
+        "Sea of Friends",
+        Model::new,
+        move |geng, player_id, model| {
+            geng::LoadingScreen::new(
+                &geng,
+                geng::EmptyLoadingScreen,
+                geng::LoadAsset::load(&geng, &static_path().join("assets")),
+                {
+                    let geng = geng.clone();
+                    move |assets| {
+                        let assets = assets.unwrap();
+                        let assets = Rc::new(assets);
+                        model.send(Message::Ping);
+                        Game::new(&geng, &assets, player_id, model)
+                    }
+                },
+            )
+        },
+    );
 }
