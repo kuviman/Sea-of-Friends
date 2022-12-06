@@ -1,5 +1,13 @@
 use super::*;
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct Position {
+    pub pos: Vec2<f32>,
+    pub vel: Vec2<f32>,
+    pub rot: f32,
+    pub w: f32,
+}
+
 pub struct MovementProps {
     pub max_speed: f32,
     pub max_rotation_speed: f32,

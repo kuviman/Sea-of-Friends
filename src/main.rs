@@ -5,6 +5,7 @@ pub mod assets;
 pub mod camera;
 pub mod fish;
 pub mod interpolation;
+pub mod local_player;
 pub mod model;
 pub mod movement;
 pub mod obj;
@@ -15,22 +16,12 @@ pub use assets::*;
 pub use camera::*;
 pub use fish::*;
 pub use interpolation::*;
+pub use local_player::*;
 pub use model::*;
 pub use movement::*;
 pub use obj::*;
 pub use player::*;
 pub use util::*;
-
-pub enum PlayerMovementControl {
-    GoTo(Vec2<f32>),
-    GoDirection(Vec2<f32>),
-}
-
-pub struct LocalPlayer {
-    pub pos: Position,
-    pub control: PlayerMovementControl,
-    pub fishing_pos: Option<Vec2<f32>>,
-}
 
 pub struct Game {
     player_id: Id,
@@ -167,56 +158,10 @@ impl Game {
         let camera_ray = self.camera.pixel_ray(self.framebuffer_size, mouse_pos);
         camera_ray.from.xy() - camera_ray.dir.xy() * camera_ray.from.z / camera_ray.dir.z
     }
-
-    pub fn draw_player(
-        &self,
-        framebuffer: &mut ugli::Framebuffer,
-        pos: &Position,
-        fishing_pos: Option<Vec2<f32>>,
-    ) {
-        let model_matrix = Mat4::translate(pos.pos.extend(0.0)) * Mat4::rotate_z(pos.rot);
-        for mesh in &self.assets.boat.meshes {
-            ugli::draw(
-                framebuffer,
-                &self.assets.shaders.obj,
-                ugli::DrawMode::Triangles,
-                &mesh.geometry,
-                (
-                    ugli::uniforms! {
-                        u_model_matrix: model_matrix,
-                        u_texture: mesh.material.texture.as_deref().unwrap_or(&self.white_texture),
-                    },
-                    geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
-                ),
-                ugli::DrawParameters {
-                    depth_func: Some(ugli::DepthFunc::Less),
-                    ..default()
-                },
-            );
-        }
-        self.draw_quad(
-            framebuffer,
-            Mat4::translate(pos.pos.extend(0.0))
-                * Mat4::rotate_x(-self.camera.rot_v)
-                * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
-                * Mat4::translate(vec3(0.0, 0.0, 1.0)),
-            &self.assets.player,
-        );
-        if let Some(pos) = fishing_pos {
-            self.draw_quad(
-                framebuffer,
-                Mat4::translate(pos.extend(0.0))
-                    * Mat4::scale_uniform(0.1)
-                    * Mat4::rotate_x(-self.camera.rot_v),
-                &self.assets.bobber,
-            );
-        }
-    }
 }
 
 impl geng::State for Game {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        let model = self.model.get();
         self.framebuffer_size = framebuffer.size().map(|x| x as f32);
         ugli::clear(
             framebuffer,
@@ -226,19 +171,9 @@ impl geng::State for Game {
         );
 
         // Drawing player
-        self.draw_player(framebuffer, &self.player.pos, self.player.fishing_pos);
-        for (id, pos) in &self.interpolated {
-            if *id == self.player_id {
-                continue;
-            }
-            let pos = pos.get();
-            if let Some(player) = model.players.get(id) {
-                self.draw_player(framebuffer, &pos, None);
-            } else if let Some(fish) = model.fishes.get(id) {
-                self.draw_fish(framebuffer, fish, &pos);
-            }
-        }
+        self.draw_players(framebuffer);
 
+        // TODO
         let mut depth_texture =
             ugli::Texture::new_uninitialized(self.geng.ugli(), framebuffer.size());
         {
@@ -376,60 +311,7 @@ impl geng::State for Game {
 
         self.time += delta_time;
 
-        // Player move
-        let mut wasd = Vec2::<f32>::ZERO;
-        if self.geng.window().is_key_pressed(geng::Key::W)
-            || self.geng.window().is_key_pressed(geng::Key::Up)
-        {
-            wasd.y += 1.0;
-        }
-        if self.geng.window().is_key_pressed(geng::Key::A)
-            || self.geng.window().is_key_pressed(geng::Key::Left)
-        {
-            wasd.x -= 1.0;
-        }
-        if self.geng.window().is_key_pressed(geng::Key::S)
-            || self.geng.window().is_key_pressed(geng::Key::Down)
-        {
-            wasd.y -= 1.0;
-        }
-        if self.geng.window().is_key_pressed(geng::Key::D)
-            || self.geng.window().is_key_pressed(geng::Key::Right)
-        {
-            wasd.x += 1.0;
-        }
-        if wasd != Vec2::ZERO
-            || matches!(self.player.control, PlayerMovementControl::GoDirection(_))
-        {
-            self.player.control = PlayerMovementControl::GoDirection(wasd);
-        }
-        let props = MovementProps {
-            max_speed: 2.0,
-            max_rotation_speed: 2.0,
-            angular_acceleration: 1.0,
-            acceleration: 1.0,
-        };
-        let target_pos = match self.player.control {
-            PlayerMovementControl::GoTo(pos) => pos,
-            PlayerMovementControl::GoDirection(dir) => self.player.pos.pos + dir * props.max_speed,
-        };
-        update_movement(&mut self.player.pos, target_pos, props, delta_time);
-
-        // handle collisions
-        for other_player in &self.model.get().players {
-            if other_player.id == self.player_id {
-                continue;
-            }
-            let Some(p) = self.interpolated.get(&other_player.id) else { continue };
-            let delta_pos = self.player.pos.pos - p.get().pos;
-            let r = 1.0;
-            if delta_pos.len() < 2.0 * r {
-                let n = delta_pos.normalize_or_zero();
-                let penetration = 2.0 * r - delta_pos.len();
-                self.player.pos.pos += n * penetration;
-                self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
-            }
-        }
+        self.update_my_player(delta_time);
     }
 
     fn handle_event(&mut self, event: geng::Event) {

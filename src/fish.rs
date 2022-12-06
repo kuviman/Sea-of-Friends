@@ -72,6 +72,14 @@ impl Model {
 }
 
 impl Game {
+    pub fn draw_fishes(&self, framebuffer: &mut ugli::Framebuffer) {
+        let model = self.model.get();
+        for fish in &model.fishes {
+            let Some(pos) = self.interpolated.get(&fish.id) else { continue };
+            let pos = pos.get();
+            self.draw_fish(framebuffer, fish, &pos);
+        }
+    }
     pub fn draw_fish(&self, framebuffer: &mut ugli::Framebuffer, fish: &Fish, pos: &Position) {
         let texture = &self.assets.fishes[fish.index];
         let matrix = Mat4::translate(pos.pos.extend(-1.0))

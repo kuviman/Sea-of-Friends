@@ -56,14 +56,6 @@ impl Model {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct Position {
-    pub pos: Vec2<f32>,
-    pub vel: Vec2<f32>,
-    pub rot: f32,
-    pub w: f32,
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Message {
     Ping,
