@@ -14,8 +14,14 @@ pub fn update_movement(
     delta_time: f32,
 ) {
     let delta_pos = target_pos - pos.pos;
-    let target_w =
-        (normalize_angle(delta_pos.arg() - pos.rot) * 10.0).clamp_abs(props.max_rotation_speed);
+    let target_w = (normalize_angle(
+        if delta_pos.len() > 0.1 {
+            delta_pos.arg()
+        } else {
+            pos.rot
+        } - pos.rot,
+    ) * 10.0)
+        .clamp_abs(props.max_rotation_speed);
     pos.w += (target_w - pos.w).clamp_abs(props.angular_acceleration);
     pos.rot += pos.w * delta_time;
     let target_vel = delta_pos.clamp_len(..=props.max_speed)
