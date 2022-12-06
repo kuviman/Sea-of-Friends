@@ -24,7 +24,7 @@ pub struct Model {
     #[diff = "clone"]
     pub id_gen: IdGen,
     #[diff = "clone"]
-    pub players: HashMap<Id, Position>,
+    pub players: Collection<Player>,
     #[diff = "clone"]
     pub fishes: Collection<Fish>,
 }
@@ -38,7 +38,7 @@ impl Model {
         )
         .unwrap();
         Self {
-            players: HashMap::new(),
+            players: Collection::new(),
             fishes: {
                 let mut fishes = Collection::new();
                 for _ in 0..100 {
@@ -67,7 +67,7 @@ pub struct Position {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Message {
     Ping,
-    Update(Position),
+    UpdatePos(Position),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -82,6 +82,7 @@ impl simple_net::Model for Model {
     const TICKS_PER_SECOND: f32 = 10.0;
     fn new_player(&mut self, events: &mut Vec<Self::Event>) -> Self::PlayerId {
         let id = self.id_gen.gen();
+        self.players.insert(Player::new(id, Vec2::ZERO));
         id
     }
 
@@ -97,8 +98,8 @@ impl simple_net::Model for Model {
     ) -> Vec<Event> {
         match message {
             Message::Ping => return vec![Event::Pong],
-            Message::Update(pos) => {
-                self.players.insert(*player_id, pos);
+            Message::UpdatePos(pos) => {
+                self.players.get_mut(player_id).unwrap().pos = pos;
             }
         }
         vec![]

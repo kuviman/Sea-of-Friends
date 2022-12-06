@@ -8,6 +8,7 @@ pub mod interpolation;
 pub mod model;
 pub mod movement;
 pub mod obj;
+pub mod player;
 pub mod util;
 
 pub use assets::*;
@@ -17,6 +18,7 @@ pub use interpolation::*;
 pub use model::*;
 pub use movement::*;
 pub use obj::*;
+pub use player::*;
 pub use util::*;
 
 pub enum PlayerMovementControl {
@@ -24,7 +26,7 @@ pub enum PlayerMovementControl {
     GoDirection(Vec2<f32>),
 }
 
-pub struct Player {
+pub struct LocalPlayer {
     pub pos: Position,
     pub control: PlayerMovementControl,
     pub fishing_pos: Option<Vec2<f32>>,
@@ -40,7 +42,7 @@ pub struct Game {
     time: f32,
     assets: Rc<Assets>,
     white_texture: ugli::Texture,
-    player: Player,
+    player: LocalPlayer,
     quad: ugli::VertexBuffer<ObjVertex>,
     ping_time: f32,
     send_ping: bool,
@@ -68,7 +70,7 @@ impl Game {
                 rot_v: f32::PI / 4.0,
             },
             white_texture: ugli::Texture::new_with(geng.ugli(), vec2(1, 1), |_| Rgba::WHITE),
-            player: Player {
+            player: LocalPlayer {
                 pos: Position {
                     pos: Vec2::ZERO,
                     vel: Vec2::ZERO,
@@ -230,7 +232,7 @@ impl geng::State for Game {
                 continue;
             }
             let pos = pos.get();
-            if model.players.contains_key(id) {
+            if let Some(player) = model.players.get(id) {
                 self.draw_player(framebuffer, &pos, None);
             } else if let Some(fish) = model.fishes.get(id) {
                 self.draw_fish(framebuffer, fish, &pos);
@@ -343,14 +345,14 @@ impl geng::State for Game {
         for event in events {
             match event {
                 Event::Pong => {
-                    self.model.send(Message::Update(self.player.pos.clone()));
+                    self.model.send(Message::UpdatePos(self.player.pos.clone()));
                     {
                         let model = self.model.get();
                         self.interpolated.retain(|id, _| {
-                            model.players.contains_key(id) || model.fishes.get(id).is_some()
+                            model.players.get(id).is_some() || model.fishes.get(id).is_some()
                         });
                         for (id, pos) in itertools::chain![
-                            &model.players,
+                            model.players.iter().map(|player| (&player.id, &player.pos)),
                             model.fishes.iter().map(|fish| (&fish.id, &fish.pos))
                         ] {
                             if let Some(i) = self.interpolated.get_mut(id) {
@@ -414,11 +416,11 @@ impl geng::State for Game {
         update_movement(&mut self.player.pos, target_pos, props, delta_time);
 
         // handle collisions
-        for id in self.model.get().players.keys() {
-            if *id == self.player_id {
+        for other_player in &self.model.get().players {
+            if other_player.id == self.player_id {
                 continue;
             }
-            let Some(p) = self.interpolated.get(id) else { continue };
+            let Some(p) = self.interpolated.get(&other_player.id) else { continue };
             let delta_pos = self.player.pos.pos - p.get().pos;
             let r = 1.0;
             if delta_pos.len() < 2.0 * r {

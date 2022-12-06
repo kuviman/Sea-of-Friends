@@ -35,15 +35,15 @@ impl Model {
                     vec2(global_rng().gen_range(-D..D), global_rng().gen_range(-D..D));
                 fish.scared = false;
             }
-            for player in self.players.values() {
-                if player.vel.len() < 1.0 {
+            for player in &self.players {
+                if player.pos.vel.len() < 1.0 {
                     continue;
                 }
                 let scare_distance = 2.0;
                 let run_away_distance = 5.0;
-                if (fish.pos.pos - player.pos).len() < scare_distance {
-                    fish.target_pos = player.pos
-                        + (fish.pos.pos - player.pos).normalize_or_zero() * run_away_distance;
+                if (fish.pos.pos - player.pos.pos).len() < scare_distance {
+                    fish.target_pos = player.pos.pos
+                        + (fish.pos.pos - player.pos.pos).normalize_or_zero() * run_away_distance;
                     fish.scared = true;
                 }
             }
