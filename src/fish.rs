@@ -36,6 +36,9 @@ impl Model {
                 fish.scared = false;
             }
             for player in self.players.values() {
+                if player.vel.len() < 1.0 {
+                    continue;
+                }
                 let scare_distance = 2.0;
                 let run_away_distance = 5.0;
                 if (fish.pos.pos - player.pos).len() < scare_distance {
