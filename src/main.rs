@@ -15,9 +15,14 @@ pub use model::*;
 pub use obj::*;
 pub use util::*;
 
+pub enum PlayerMovementControl {
+    GoTo(Vec2<f32>),
+    GoDirection(Vec2<f32>),
+}
+
 pub struct Player {
     pub pos: Position,
-    pub target_pos: Vec2<f32>,
+    pub control: PlayerMovementControl,
     pub fishing_pos: Option<Vec2<f32>>,
 }
 
@@ -64,8 +69,9 @@ impl Game {
                     pos: Vec2::ZERO,
                     vel: Vec2::ZERO,
                     rot: 0.0,
+                    w: 0.0,
                 },
-                target_pos: Vec2::ZERO,
+                control: PlayerMovementControl::GoDirection(Vec2::ZERO),
                 fishing_pos: None,
             },
             quad: ugli::VertexBuffer::new_static(
@@ -357,30 +363,52 @@ impl geng::State for Game {
 
         // Player move
         let mut wasd = Vec2::<f32>::ZERO;
-        if self.geng.window().is_key_pressed(geng::Key::W) {
+        if self.geng.window().is_key_pressed(geng::Key::W)
+            || self.geng.window().is_key_pressed(geng::Key::Up)
+        {
             wasd.y += 1.0;
         }
-        if self.geng.window().is_key_pressed(geng::Key::A) {
+        if self.geng.window().is_key_pressed(geng::Key::A)
+            || self.geng.window().is_key_pressed(geng::Key::Left)
+        {
             wasd.x -= 1.0;
         }
-        if self.geng.window().is_key_pressed(geng::Key::S) {
+        if self.geng.window().is_key_pressed(geng::Key::S)
+            || self.geng.window().is_key_pressed(geng::Key::Down)
+        {
             wasd.y -= 1.0;
         }
-        if self.geng.window().is_key_pressed(geng::Key::D) {
+        if self.geng.window().is_key_pressed(geng::Key::D)
+            || self.geng.window().is_key_pressed(geng::Key::Right)
+        {
             wasd.x += 1.0;
         }
-        if wasd != Vec2::ZERO {
-            self.player.target_pos = self.player.pos.pos + wasd;
+        if wasd != Vec2::ZERO
+            || matches!(self.player.control, PlayerMovementControl::GoDirection(_))
+        {
+            self.player.control = PlayerMovementControl::GoDirection(wasd);
         }
-        let delta_pos = self.player.target_pos - self.player.pos.pos;
-        if delta_pos.len() > 0.5 {
-            self.player.pos.vel = delta_pos.normalize();
-            self.player.pos.pos += delta_pos.clamp_len(..=delta_time);
-            self.player.pos.rot +=
-                normalize_angle(delta_pos.arg() - self.player.pos.rot).clamp_abs(5.0 * delta_time);
-        } else {
-            self.player.pos.vel = Vec2::ZERO;
-        }
+        const MAX_SPEED: f32 = 2.0;
+        let delta_pos = match self.player.control {
+            PlayerMovementControl::GoTo(pos) => pos,
+            PlayerMovementControl::GoDirection(dir) => self.player.pos.pos + dir * MAX_SPEED,
+        } - self.player.pos.pos;
+        const MAX_ROTATION_SPEED: f32 = 2.0;
+        let target_w =
+            normalize_angle(delta_pos.arg() - self.player.pos.rot).clamp_abs(MAX_ROTATION_SPEED);
+        const ANGULAR_ACCELERATION: f32 = 1.0;
+        self.player.pos.w += (target_w - self.player.pos.w).clamp_abs(ANGULAR_ACCELERATION);
+        self.player.pos.rot += self.player.pos.w * delta_time;
+        let target_vel = delta_pos.clamp_len(..=MAX_SPEED)
+            * Vec2::dot(
+                delta_pos.normalize_or_zero(),
+                vec2(1.0, 0.0).rotate(self.player.pos.rot),
+            )
+            .max(0.0);
+        const ACCELERATION: f32 = 1.0;
+        self.player.pos.vel +=
+            (target_vel - self.player.pos.vel).clamp_len(..=ACCELERATION * delta_time);
+        self.player.pos.pos += self.player.pos.vel * delta_time;
     }
 
     fn handle_event(&mut self, event: geng::Event) {
@@ -396,9 +424,19 @@ impl geng::State for Game {
                         }
                     }
                     geng::MouseButton::Right => {
-                        self.player.target_pos = pos;
+                        self.player.control = PlayerMovementControl::GoTo(pos);
                     }
                     _ => {}
+                }
+            }
+            geng::Event::MouseMove { position, .. } => {
+                let pos = self.world_pos(position.map(|x| x as f32));
+                if self
+                    .geng
+                    .window()
+                    .is_button_pressed(geng::MouseButton::Right)
+                {
+                    self.player.control = PlayerMovementControl::GoTo(pos);
                 }
             }
             _ => {}

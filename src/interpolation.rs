@@ -128,12 +128,12 @@ impl InterpolatedPosition {
     pub fn new(pos: &Position) -> Self {
         Self {
             pos: Interpolated::new(pos.pos, Vec2::ZERO),
-            rot: Interpolated::new(Angle(pos.rot), Angle(0.0)),
+            rot: Interpolated::new(Angle(pos.rot), Angle(pos.w)),
         }
     }
     pub fn server_update(&mut self, pos: &Position) {
         self.pos.server_update(pos.pos, pos.vel);
-        self.rot.server_update(Angle(pos.rot), Angle(0.0));
+        self.rot.server_update(Angle(pos.rot), Angle(pos.w));
     }
     pub fn update(&mut self, delta_time: f32) {
         self.pos.update(delta_time);
@@ -144,6 +144,7 @@ impl InterpolatedPosition {
             pos: self.pos.get(),
             vel: self.pos.get_derivative(),
             rot: self.rot.get().0,
+            w: self.rot.get_derivative().0,
         }
     }
 }
