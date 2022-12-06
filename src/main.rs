@@ -3,15 +3,19 @@ use geng::prelude::*;
 
 pub mod assets;
 pub mod camera;
+pub mod fish;
 pub mod interpolation;
 pub mod model;
+pub mod movement;
 pub mod obj;
 pub mod util;
 
 pub use assets::*;
 pub use camera::*;
+pub use fish::*;
 pub use interpolation::*;
 pub use model::*;
+pub use movement::*;
 pub use obj::*;
 pub use util::*;
 
@@ -210,6 +214,7 @@ impl Game {
 
 impl geng::State for Game {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        let model = self.model.get();
         self.framebuffer_size = framebuffer.size().map(|x| x as f32);
         ugli::clear(
             framebuffer,
@@ -225,7 +230,13 @@ impl geng::State for Game {
                 continue;
             }
             let pos = pos.get();
-            self.draw_player(framebuffer, &pos, None);
+            if model.positions.contains_key(id) {
+                self.draw_player(framebuffer, &pos, None);
+            } else if let Some(fish) = model.fishes.get(id) {
+                self.draw_fish(framebuffer, fish, &pos);
+            } else {
+                unreachable!();
+            }
         }
 
         let mut depth_texture =
@@ -337,9 +348,13 @@ impl geng::State for Game {
                     self.model.send(Message::Update(self.player.pos.clone()));
                     {
                         let model = self.model.get();
-                        self.interpolated
-                            .retain(|id, _| model.positions.contains_key(id));
-                        for (id, pos) in &model.positions {
+                        self.interpolated.retain(|id, _| {
+                            model.positions.contains_key(id) || model.fishes.get(id).is_some()
+                        });
+                        for (id, pos) in itertools::chain![
+                            &model.positions,
+                            model.fishes.iter().map(|fish| (&fish.id, &fish.pos))
+                        ] {
                             if let Some(i) = self.interpolated.get_mut(id) {
                                 i.server_update(pos);
                             } else {
@@ -388,27 +403,17 @@ impl geng::State for Game {
         {
             self.player.control = PlayerMovementControl::GoDirection(wasd);
         }
-        const MAX_SPEED: f32 = 2.0;
-        let delta_pos = match self.player.control {
+        let props = MovementProps {
+            max_speed: 2.0,
+            max_rotation_speed: 2.0,
+            angular_acceleration: 1.0,
+            acceleration: 1.0,
+        };
+        let target_pos = match self.player.control {
             PlayerMovementControl::GoTo(pos) => pos,
-            PlayerMovementControl::GoDirection(dir) => self.player.pos.pos + dir * MAX_SPEED,
-        } - self.player.pos.pos;
-        const MAX_ROTATION_SPEED: f32 = 2.0;
-        let target_w =
-            normalize_angle(delta_pos.arg() - self.player.pos.rot).clamp_abs(MAX_ROTATION_SPEED);
-        const ANGULAR_ACCELERATION: f32 = 1.0;
-        self.player.pos.w += (target_w - self.player.pos.w).clamp_abs(ANGULAR_ACCELERATION);
-        self.player.pos.rot += self.player.pos.w * delta_time;
-        let target_vel = delta_pos.clamp_len(..=MAX_SPEED)
-            * Vec2::dot(
-                delta_pos.normalize_or_zero(),
-                vec2(1.0, 0.0).rotate(self.player.pos.rot),
-            )
-            .max(0.0);
-        const ACCELERATION: f32 = 1.0;
-        self.player.pos.vel +=
-            (target_vel - self.player.pos.vel).clamp_len(..=ACCELERATION * delta_time);
-        self.player.pos.pos += self.player.pos.vel * delta_time;
+            PlayerMovementControl::GoDirection(dir) => self.player.pos.pos + dir * props.max_speed,
+        };
+        update_movement(&mut self.player.pos, target_pos, props, delta_time);
     }
 
     fn handle_event(&mut self, event: geng::Event) {

@@ -25,13 +25,32 @@ pub struct Model {
     pub id_gen: IdGen,
     #[diff = "clone"]
     pub positions: HashMap<Id, Position>,
+    #[diff = "clone"]
+    pub fishes: Collection<Fish>,
 }
 
 impl Model {
     pub fn new() -> Self {
+        let mut id_gen = IdGen::new();
+        let fish_types: Vec<String> = serde_json::from_reader(
+            std::fs::File::open(static_path().join("assets").join("fish").join("list.json"))
+                .unwrap(),
+        )
+        .unwrap();
         Self {
-            id_gen: IdGen::new(),
             positions: HashMap::new(),
+            fishes: {
+                let mut fishes = Collection::new();
+                for _ in 0..100 {
+                    fishes.insert(Fish::new(
+                        id_gen.gen(),
+                        global_rng().gen_range(0..fish_types.len()),
+                        Vec2::ZERO,
+                    ))
+                }
+                fishes
+            },
+            id_gen,
         }
     }
 }
@@ -84,5 +103,10 @@ impl simple_net::Model for Model {
         vec![]
     }
 
-    fn tick(&mut self, events: &mut Vec<Self::Event>) {}
+    fn tick(&mut self, events: &mut Vec<Self::Event>) {
+        let delta_time = 1.0 / Self::TICKS_PER_SECOND;
+        for fish in &mut self.fishes {
+            fish.update(delta_time);
+        }
+    }
 }
