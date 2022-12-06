@@ -6,6 +6,7 @@ pub struct Fish {
     pub index: usize,
     pub pos: Position,
     pub target_pos: Vec2<f32>,
+    pub scared: bool,
 }
 
 impl Fish {
@@ -20,25 +21,50 @@ impl Fish {
                 w: 0.0,
             },
             target_pos: pos,
+            scared: false,
         }
     }
+}
 
-    pub fn update(&mut self, delta_time: f32) {
-        if (self.pos.pos - self.target_pos).len() < 1.0 {
-            const D: f32 = 10.0;
-            self.target_pos = vec2(global_rng().gen_range(-D..D), global_rng().gen_range(-D..D));
+impl Model {
+    pub fn update_fishes(&mut self, delta_time: f32) {
+        for fish in &mut self.fishes {
+            if (fish.pos.pos - fish.target_pos).len() < 1.0 {
+                const D: f32 = 10.0;
+                fish.target_pos =
+                    vec2(global_rng().gen_range(-D..D), global_rng().gen_range(-D..D));
+                fish.scared = false;
+            }
+            for player in self.players.values() {
+                let scare_distance = 2.0;
+                let run_away_distance = 5.0;
+                if (fish.pos.pos - player.pos).len() < scare_distance {
+                    fish.target_pos = player.pos
+                        + (fish.pos.pos - player.pos).normalize_or_zero() * run_away_distance;
+                    fish.scared = true;
+                }
+            }
+            update_movement(
+                &mut fish.pos,
+                fish.target_pos,
+                if fish.scared {
+                    MovementProps {
+                        max_speed: 3.0,
+                        max_rotation_speed: 5.0,
+                        angular_acceleration: 10.0,
+                        acceleration: 3.0,
+                    }
+                } else {
+                    MovementProps {
+                        max_speed: 0.5,
+                        max_rotation_speed: 2.0,
+                        angular_acceleration: 1.0,
+                        acceleration: 0.5,
+                    }
+                },
+                delta_time,
+            );
         }
-        update_movement(
-            &mut self.pos,
-            self.target_pos,
-            MovementProps {
-                max_speed: 0.5,
-                max_rotation_speed: 2.0,
-                angular_acceleration: 1.0,
-                acceleration: 0.5,
-            },
-            delta_time,
-        );
     }
 }
 

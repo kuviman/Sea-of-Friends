@@ -24,7 +24,7 @@ pub struct Model {
     #[diff = "clone"]
     pub id_gen: IdGen,
     #[diff = "clone"]
-    pub positions: HashMap<Id, Position>,
+    pub players: HashMap<Id, Position>,
     #[diff = "clone"]
     pub fishes: Collection<Fish>,
 }
@@ -38,14 +38,15 @@ impl Model {
         )
         .unwrap();
         Self {
-            positions: HashMap::new(),
+            players: HashMap::new(),
             fishes: {
                 let mut fishes = Collection::new();
                 for _ in 0..100 {
+                    const D: f32 = 10.0;
                     fishes.insert(Fish::new(
                         id_gen.gen(),
                         global_rng().gen_range(0..fish_types.len()),
-                        Vec2::ZERO,
+                        vec2(global_rng().gen_range(-D..D), global_rng().gen_range(-D..D)),
                     ))
                 }
                 fishes
@@ -85,7 +86,7 @@ impl simple_net::Model for Model {
     }
 
     fn drop_player(&mut self, events: &mut Vec<Self::Event>, player_id: &Self::PlayerId) {
-        self.positions.remove(player_id);
+        self.players.remove(player_id);
     }
 
     fn handle_message(
@@ -97,7 +98,7 @@ impl simple_net::Model for Model {
         match message {
             Message::Ping => return vec![Event::Pong],
             Message::Update(pos) => {
-                self.positions.insert(*player_id, pos);
+                self.players.insert(*player_id, pos);
             }
         }
         vec![]
@@ -105,8 +106,6 @@ impl simple_net::Model for Model {
 
     fn tick(&mut self, events: &mut Vec<Self::Event>) {
         let delta_time = 1.0 / Self::TICKS_PER_SECOND;
-        for fish in &mut self.fishes {
-            fish.update(delta_time);
-        }
+        self.update_fishes(delta_time);
     }
 }

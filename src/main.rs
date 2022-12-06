@@ -230,7 +230,7 @@ impl geng::State for Game {
                 continue;
             }
             let pos = pos.get();
-            if model.positions.contains_key(id) {
+            if model.players.contains_key(id) {
                 self.draw_player(framebuffer, &pos, None);
             } else if let Some(fish) = model.fishes.get(id) {
                 self.draw_fish(framebuffer, fish, &pos);
@@ -349,10 +349,10 @@ impl geng::State for Game {
                     {
                         let model = self.model.get();
                         self.interpolated.retain(|id, _| {
-                            model.positions.contains_key(id) || model.fishes.get(id).is_some()
+                            model.players.contains_key(id) || model.fishes.get(id).is_some()
                         });
                         for (id, pos) in itertools::chain![
-                            &model.positions,
+                            &model.players,
                             model.fishes.iter().map(|fish| (&fish.id, &fish.pos))
                         ] {
                             if let Some(i) = self.interpolated.get_mut(id) {
