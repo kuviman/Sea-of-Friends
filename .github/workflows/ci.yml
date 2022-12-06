@@ -4,8 +4,8 @@ env:
   CONNECT: wss://sea-of-friends.kuviman.com
 
 jobs:
-  build:
-    name: Build
+  build-web:
+    name: Build web
     runs-on: ubuntu-latest
     container: kuviman/geng
     steps:
@@ -17,6 +17,14 @@ jobs:
         with:
           name: web
           path: target/geng
+
+  build-server:
+    name: Build server
+    runs-on: ubuntu-latest
+    container: kuviman/geng
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
       - run: cargo geng build --release
       - name: Upload artifacts (linux)
         uses: actions/upload-artifact@v2
@@ -29,7 +37,8 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.repository_owner == 'kuviman'
     runs-on: ubuntu-latest
     needs:
-      - build
+      - build-web
+      - build-server
     environment:
       name: main
       url: https://kuviman.itch.io/sea-of-friends
