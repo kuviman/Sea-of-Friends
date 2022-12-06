@@ -234,8 +234,6 @@ impl geng::State for Game {
                 self.draw_player(framebuffer, &pos, None);
             } else if let Some(fish) = model.fishes.get(id) {
                 self.draw_fish(framebuffer, fish, &pos);
-            } else {
-                unreachable!();
             }
         }
 
