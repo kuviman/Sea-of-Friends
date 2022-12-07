@@ -170,8 +170,8 @@ impl geng::State for Game {
             None,
         );
 
-        // Drawing player
         self.draw_players(framebuffer);
+        self.draw_fishes(framebuffer);
 
         // TODO
         let mut depth_texture =
