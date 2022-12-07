@@ -1,0 +1,48 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Server",
+            "program": "${workspaceFolder}/target/debug/sea-of-friends.exe",
+            "args": [
+                "--server",
+                "127.0.0.1:3002"
+            ],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "CARGO_MANIFEST_DIR": "${workspaceFolder}"
+            },
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Client",
+            "program": "${workspaceFolder}/target/debug/sea-of-friends.exe",
+            "args": [
+                "--connect",
+                "ws://127.0.0.1:3002"
+            ],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "CARGO_MANIFEST_DIR": "${workspaceFolder}"
+            },
+        },
+    ],
+    "compounds": [
+        {
+            "name": "Server/Client",
+            "configurations": [
+                "Server",
+                "Client"
+            ],
+            "stopAll": true,
+            "preLaunchTask": "build",
+        }
+    ]
+}
