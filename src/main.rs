@@ -33,7 +33,9 @@ pub struct Game {
     time: f32,
     assets: Rc<Assets>,
     white_texture: ugli::Texture,
-    player: LocalPlayer,
+    player: Player,
+    player_control: PlayerMovementControl,
+    player_casting_times: HashMap<Id, f32>,
     quad: ugli::VertexBuffer<ObjVertex>,
     ping_time: f32,
     send_ping: bool,
@@ -61,16 +63,8 @@ impl Game {
                 rot_v: f32::PI / 4.0,
             },
             white_texture: ugli::Texture::new_with(geng.ugli(), vec2(1, 1), |_| Rgba::WHITE),
-            player: LocalPlayer {
-                pos: Position {
-                    pos: Vec2::ZERO,
-                    vel: Vec2::ZERO,
-                    rot: 0.0,
-                    w: 0.0,
-                },
-                control: PlayerMovementControl::GoDirection(Vec2::ZERO),
-                fishing_pos: None,
-            },
+            player: Player::new(player_id, Vec2::ZERO),
+            player_control: PlayerMovementControl::GoDirection(Vec2::ZERO),
             quad: ugli::VertexBuffer::new_static(
                 geng.ugli(),
                 vec![
@@ -99,6 +93,7 @@ impl Game {
             interpolated: HashMap::new(),
             ping_time: 0.0,
             send_ping: false,
+            player_casting_times: HashMap::new(),
         }
     }
 
@@ -217,15 +212,6 @@ impl geng::State for Game {
                     * Mat4::translate(vec3(0.0, 0.0, 1.0)),
                 &self.assets.player,
             );
-            if let Some(pos) = self.player.fishing_pos {
-                self.draw_quad2(
-                    framebuffer,
-                    Mat4::translate(pos.extend(0.0))
-                        * Mat4::scale_uniform(0.1)
-                        * Mat4::rotate_x(-self.camera.rot_v),
-                    &self.assets.bobber,
-                );
-            }
 
             ugli::draw(
                 framebuffer,
@@ -280,7 +266,7 @@ impl geng::State for Game {
         for event in events {
             match event {
                 Event::Pong => {
-                    self.model.send(Message::UpdatePos(self.player.pos.clone()));
+                    self.model.send(Message::Update(self.player.clone()));
                     {
                         let model = self.model.get();
                         self.interpolated.retain(|id, _| {
@@ -312,6 +298,7 @@ impl geng::State for Game {
         self.time += delta_time;
 
         self.update_my_player(delta_time);
+        self.update_local_player_data(delta_time);
     }
 
     fn handle_event(&mut self, event: geng::Event) {
@@ -320,14 +307,25 @@ impl geng::State for Game {
                 let pos = self.world_pos(position.map(|x| x as f32));
                 match button {
                     geng::MouseButton::Left => {
-                        if self.player.fishing_pos.is_some() {
-                            self.player.fishing_pos = None;
+                        if let FishingState::Idle = self.player.fishing_state {
+                            self.player.fishing_state = FishingState::Spinning;
                         } else {
-                            self.player.fishing_pos = Some(pos);
+                            self.player.fishing_state = FishingState::Idle;
                         }
                     }
                     geng::MouseButton::Right => {
-                        self.player.control = PlayerMovementControl::GoTo(pos);
+                        self.player_control = PlayerMovementControl::GoTo(pos);
+                    }
+                    _ => {}
+                }
+            }
+            geng::Event::MouseUp { position, button } => {
+                let pos = self.world_pos(position.map(|x| x as f32));
+                match button {
+                    geng::MouseButton::Left => {
+                        if let FishingState::Spinning = self.player.fishing_state {
+                            self.player.fishing_state = FishingState::Casting(pos);
+                        }
                     }
                     _ => {}
                 }
@@ -339,7 +337,7 @@ impl geng::State for Game {
                     .window()
                     .is_button_pressed(geng::MouseButton::Right)
                 {
-                    self.player.control = PlayerMovementControl::GoTo(pos);
+                    self.player_control = PlayerMovementControl::GoTo(pos);
                 }
             }
             _ => {}

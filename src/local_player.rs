@@ -5,12 +5,6 @@ pub enum PlayerMovementControl {
     GoDirection(Vec2<f32>),
 }
 
-pub struct LocalPlayer {
-    pub pos: Position,
-    pub control: PlayerMovementControl,
-    pub fishing_pos: Option<Vec2<f32>>,
-}
-
 impl Game {
     pub fn update_my_player(&mut self, delta_time: f32) {
         let mut wasd = Vec2::<f32>::ZERO;
@@ -35,9 +29,9 @@ impl Game {
             wasd.x += 1.0;
         }
         if wasd != Vec2::ZERO
-            || matches!(self.player.control, PlayerMovementControl::GoDirection(_))
+            || matches!(self.player_control, PlayerMovementControl::GoDirection(_))
         {
-            self.player.control = PlayerMovementControl::GoDirection(wasd);
+            self.player_control = PlayerMovementControl::GoDirection(wasd);
         }
 
         let props = MovementProps {
@@ -46,7 +40,7 @@ impl Game {
             angular_acceleration: 1.0,
             acceleration: 1.0,
         };
-        let target_pos = match self.player.control {
+        let target_pos = match self.player_control {
             PlayerMovementControl::GoTo(pos) => pos,
             PlayerMovementControl::GoDirection(dir) => self.player.pos.pos + dir * props.max_speed,
         };

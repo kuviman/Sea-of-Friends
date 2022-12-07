@@ -27,6 +27,7 @@ pub struct Assets {
     pub distort_noise: ugli::Texture,
     #[asset(load_with = "load_fishes(&geng, &base_path.join(\"fish\"))")]
     pub fishes: Vec<ugli::Texture>,
+    pub fishing_rod: ugli::Texture,
 }
 
 fn load_fishes(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Vec<ugli::Texture>> {

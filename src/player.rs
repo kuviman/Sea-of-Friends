@@ -1,9 +1,18 @@
 use super::*;
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum FishingState {
+    Idle,
+    Spinning,
+    Casting(Vec2<f32>),
+    Fishing(Vec2<f32>),
+}
+
 #[derive(HasId, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Player {
     pub id: Id,
     pub pos: Position,
+    pub fishing_state: FishingState,
 }
 
 impl Player {
@@ -16,29 +25,50 @@ impl Player {
                 rot: global_rng().gen_range(0.0..2.0 * f32::PI),
                 w: 0.0,
             },
+            fishing_state: FishingState::Idle,
         }
     }
 }
 
 impl Game {
+    pub fn update_local_player_data(&mut self, delta_time: f32) {
+        let model = self.model.get();
+        self.player_casting_times.retain(|id, _| {
+            model
+                .players
+                .get(id)
+                .and_then(|player| match player.fishing_state {
+                    FishingState::Casting(_) => Some(()),
+                    _ => None,
+                })
+                .is_some()
+        });
+        for player in &model.players {
+            if let FishingState::Casting(_) = player.fishing_state {
+                *self.player_casting_times.entry(player.id).or_default() += delta_time;
+            }
+        }
+        if let Some(time) = self.player_casting_times.get(&self.player_id) {
+            if *time > 1.0 {
+                if let FishingState::Casting(pos) = self.player.fishing_state {
+                    self.player.fishing_state = FishingState::Fishing(pos);
+                }
+            }
+        }
+    }
     pub fn draw_players(&self, framebuffer: &mut ugli::Framebuffer) {
         let model = self.model.get();
-        self.draw_player(framebuffer, &self.player.pos, self.player.fishing_pos);
+        self.draw_player(framebuffer, &self.player, &self.player.pos);
         for player in &model.players {
             if player.id == self.player_id {
                 continue;
             }
             let Some(pos) = self.interpolated.get(&player.id) else { continue };
             let pos = pos.get();
-            self.draw_player(framebuffer, &pos, None);
+            self.draw_player(framebuffer, player, &pos);
         }
     }
-    fn draw_player(
-        &self,
-        framebuffer: &mut ugli::Framebuffer,
-        pos: &Position,
-        fishing_pos: Option<Vec2<f32>>,
-    ) {
+    fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player, pos: &Position) {
         let model_matrix = Mat4::translate(pos.pos.extend(0.0)) * Mat4::rotate_z(pos.rot);
         for mesh in &self.assets.boat.meshes {
             ugli::draw(
@@ -67,14 +97,85 @@ impl Game {
                 * Mat4::translate(vec3(0.0, 0.0, 1.0)),
             &self.assets.player,
         );
-        if let Some(pos) = fishing_pos {
-            self.draw_quad(
-                framebuffer,
-                Mat4::translate(pos.extend(0.0))
-                    * Mat4::scale_uniform(0.1)
-                    * Mat4::rotate_x(-self.camera.rot_v),
-                &self.assets.bobber,
-            );
+        let mut fishing_rod_rot = None;
+        let mut bobber_pos = None;
+        match &player.fishing_state {
+            FishingState::Idle => {}
+            FishingState::Spinning => {
+                fishing_rod_rot = Some(self.time * 5.0);
+            }
+            FishingState::Casting(target_pos) => {
+                let t = self
+                    .player_casting_times
+                    .get(&player.id)
+                    .copied()
+                    .unwrap_or(0.0)
+                    .min(1.0);
+                fishing_rod_rot = Some(t);
+                let start_pos = pos.pos.extend(1.0);
+                bobber_pos = Some(start_pos * (1.0 - t) + target_pos.extend(0.0) * t);
+            }
+            FishingState::Fishing(target_pos) => {
+                fishing_rod_rot = Some(0.5);
+                bobber_pos = Some(target_pos.extend(0.0));
+            }
+        }
+        // Draw fishing rod
+        if let Some(rot) = fishing_rod_rot {
+            let texture = &self.assets.fishing_rod;
+            let fishing_rod_matrix = Mat4::translate(pos.pos.extend(0.5))
+                * Mat4::rotate_x(-self.camera.rot_v)
+                * Mat4::rotate_y(rot)
+                * Mat4::translate(vec3(0.0, 0.0, 0.5))
+                * Mat4::scale(vec3(
+                    texture.size().x as f32 / texture.size().y as f32,
+                    1.0,
+                    1.0,
+                ));
+            self.draw_quad(framebuffer, fishing_rod_matrix, texture);
+
+            // Bobber
+            if let Some(bobber_pos) = bobber_pos {
+                let fishing_rod_pos = (fishing_rod_matrix * vec4(0.0, 0.0, 1.0, 1.0)).xyz();
+                ugli::draw(
+                    framebuffer,
+                    &self.assets.shaders.obj,
+                    ugli::DrawMode::LineStrip { line_width: 1.0 },
+                    &ugli::VertexBuffer::new_dynamic(self.geng.ugli(), {
+                        const N: i32 = 10;
+                        (0..=N)
+                            .map(|i| {
+                                let t = i as f32 / N as f32;
+                                ObjVertex {
+                                    a_v: fishing_rod_pos * (1.0 - t)
+                                        + bobber_pos * t
+                                        + vec3(0.0, 0.0, (t * 2.0 - 1.0).sqr() - 1.0),
+                                    a_uv: Vec2::ZERO,
+                                    a_vn: Vec3::ZERO,
+                                }
+                            })
+                            .collect()
+                    }),
+                    (
+                        ugli::uniforms! {
+                            u_model_matrix: Mat4::identity(),
+                            u_texture: &self.white_texture,
+                        },
+                        geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
+                    ),
+                    ugli::DrawParameters {
+                        depth_func: Some(ugli::DepthFunc::Less),
+                        ..default()
+                    },
+                );
+                self.draw_quad(
+                    framebuffer,
+                    Mat4::translate(bobber_pos)
+                        * Mat4::scale_uniform(0.1)
+                        * Mat4::rotate_x(-self.camera.rot_v),
+                    &self.assets.bobber,
+                );
+            }
         }
     }
 }

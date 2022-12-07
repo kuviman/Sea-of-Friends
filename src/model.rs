@@ -59,7 +59,7 @@ impl Model {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Message {
     Ping,
-    UpdatePos(Position),
+    Update(Player),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -90,8 +90,10 @@ impl simple_net::Model for Model {
     ) -> Vec<Event> {
         match message {
             Message::Ping => return vec![Event::Pong],
-            Message::UpdatePos(pos) => {
-                self.players.get_mut(player_id).unwrap().pos = pos;
+            Message::Update(data) => {
+                if data.id == *player_id {
+                    *self.players.get_mut(player_id).unwrap() = data;
+                }
             }
         }
         vec![]
