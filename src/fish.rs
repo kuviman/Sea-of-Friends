@@ -42,6 +42,19 @@ impl Model {
             })
             .collect();
         for fish in &mut self.fishes {
+            let cur = Self::get_map_color(fish.pos.pos)[0];
+            if cur > 0 {
+                if Self::get_map_color(
+                    fish.pos.pos + (fish.target_pos - fish.pos.pos).clamp_len(..=1.0),
+                )[0] > cur
+                {
+                    const D: f32 = 1.0;
+                    fish.scared = true;
+                    fish.target_pos = fish.pos.pos
+                        + vec2(global_rng().gen_range(-D..D), global_rng().gen_range(-D..D));
+                }
+            }
+
             if (fish.pos.pos - fish.target_pos).len() < 1.0 {
                 const D: f32 = 10.0;
                 fish.target_pos =
@@ -146,7 +159,7 @@ impl Game {
             //     }
             //     pos
             // }
-            pos.pos.extend(-1.0),
+            pos.pos.extend(-0.1),
         ) * Mat4::rotate_z(pos.rot)
             * Mat4::scale(texture.size().map(|x| x as f32 / 500.0).extend(1.0))
             * Mat4::rotate_x(f32::PI / 2.0);

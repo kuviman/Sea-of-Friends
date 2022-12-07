@@ -54,8 +54,9 @@ void main() {
     v_v = a_v;
 	viewNormal = (u_view_matrix * vec4(0.0, 0.0, 1.0, 0.0)).xyz;
     // (MODELVIEW_MATRIX * vec4(NORMAL, 0.0)).xyz;
-	noiseUV = a_uv * surface_noise_tiling;
-	distortUV = a_uv;
+	vec2 uv = a_uv * 10.0;
+	noiseUV = uv * surface_noise_tiling;
+	distortUV = uv;
     v_eye_pos = u_view_matrix * u_model_matrix * vec4(a_v, 1.0);
     gl_Position = u_projection_matrix * v_eye_pos;
 }

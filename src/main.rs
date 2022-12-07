@@ -39,6 +39,7 @@ pub struct Game {
     quad: ugli::VertexBuffer<ObjVertex>,
     ping_time: f32,
     send_ping: bool,
+    land_geometry: ugli::VertexBuffer<ObjVertex>,
 }
 
 impl Game {
@@ -90,6 +91,36 @@ impl Game {
                     },
                 ],
             ),
+            land_geometry: {
+                let mut vs = Vec::new();
+                const N: i32 = 128;
+                const SIZE: f32 = 100.0;
+                for x in (-N..N).skip(1).step_by(2) {
+                    for y in (-N..N).skip(1).step_by(2) {
+                        let vertex = |x, y| ObjVertex {
+                            a_v: vec3(x as f32 / N as f32 * SIZE, y as f32 / N as f32 * SIZE, 0.0),
+                            a_uv: vec2(
+                                x as f32 / N as f32 * 0.5 + 0.5,
+                                y as f32 / N as f32 * 0.5 + 0.5,
+                            ),
+                            a_vn: Vec3::ZERO,
+                        };
+                        let mut quad = |dx, dy| {
+                            vs.push(vertex(x, y));
+                            vs.push(vertex(x + dx, y));
+                            vs.push(vertex(x + dx, y + dy));
+                            vs.push(vertex(x, y));
+                            vs.push(vertex(x + dx, y + dy));
+                            vs.push(vertex(x, y + dy));
+                        };
+                        quad(-1, -1);
+                        quad(1, -1);
+                        quad(1, 1);
+                        quad(-1, 1);
+                    }
+                }
+                ugli::VertexBuffer::new_static(geng.ugli(), vs)
+            },
             interpolated: HashMap::new(),
             ping_time: 0.0,
             send_ping: false,
@@ -165,8 +196,24 @@ impl geng::State for Game {
             None,
         );
 
-        self.draw_players(framebuffer);
+        // ugli::draw(
+        //     framebuffer,
+        //     &self.assets.shaders.land,
+        //     ugli::DrawMode::Triangles,
+        //     &self.land_geometry,
+        //     (
+        //         ugli::uniforms! {
+        //             u_heightmap: &self.assets.map,
+        //         },
+        //         geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
+        //     ),
+        //     ugli::DrawParameters {
+        //         depth_func: Some(ugli::DepthFunc::Less),
+        //         ..default()
+        //     },
+        // );
         self.draw_fishes(framebuffer);
+        self.draw_players(framebuffer);
 
         // TODO
         let mut depth_texture =
@@ -183,45 +230,15 @@ impl geng::State for Game {
             );
             let framebuffer = &mut framebuffer;
             ugli::clear(framebuffer, Some(Rgba::TRANSPARENT_BLACK), Some(1.0), None);
-            let model_matrix = Mat4::translate(self.player.pos.pos.extend(0.0))
-                * Mat4::rotate_z(self.player.pos.rot);
-            for mesh in &self.assets.boat.meshes {
-                ugli::draw(
-                    framebuffer,
-                    &self.assets.shaders.obj2,
-                    ugli::DrawMode::Triangles,
-                    &mesh.geometry,
-                    (
-                        ugli::uniforms! {
-                            u_model_matrix: model_matrix,
-                            u_texture: mesh.material.texture.as_deref().unwrap_or(&self.white_texture),
-                        },
-                        geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
-                    ),
-                    ugli::DrawParameters {
-                        depth_func: Some(ugli::DepthFunc::Less),
-                        ..default()
-                    },
-                );
-            }
-            self.draw_quad2(
-                framebuffer,
-                Mat4::translate(self.player.pos.pos.extend(0.0))
-                    * Mat4::rotate_x(-self.camera.rot_v)
-                    * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
-                    * Mat4::translate(vec3(0.0, 0.0, 1.0)),
-                &self.assets.player,
-            );
 
             ugli::draw(
                 framebuffer,
-                &self.assets.shaders.obj2,
-                ugli::DrawMode::TriangleFan,
-                &self.quad,
+                &self.assets.shaders.land2,
+                ugli::DrawMode::Triangles,
+                &self.land_geometry,
                 (
                     ugli::uniforms! {
-                        u_model_matrix: Mat4::translate(vec3(0.0, 0.0, -1.0)) * Mat4::rotate_x(f32::PI / 2.0) * Mat4::scale_uniform(10.0),
-                        u_texture: &self.white_texture,
+                        u_heightmap: &self.assets.map,
                     },
                     geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
                 ),
@@ -243,7 +260,7 @@ impl geng::State for Game {
                     distortNoise: &self.assets.distort_noise,
                     u_depth_texture: &depth_texture,
                     u_framebuffer_size: self.framebuffer_size,
-                    u_model_matrix: Mat4::rotate_x(f32::PI / 2.0) * Mat4::scale_uniform(10.0),
+                    u_model_matrix: Mat4::rotate_x(f32::PI / 2.0) * Mat4::scale_uniform(100.0),
                     u_time: self.time,
                 },
                 geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
@@ -258,6 +275,8 @@ impl geng::State for Game {
 
     fn update(&mut self, delta_time: f64) {
         let delta_time = delta_time as f32;
+
+        self.camera.pos = self.player.pos.pos.extend(0.0);
 
         let events = self.model.update();
         for i in self.interpolated.values_mut() {
