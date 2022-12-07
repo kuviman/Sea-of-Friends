@@ -25,6 +25,9 @@ impl Game {
         let model = self.model.get();
         self.draw_player(framebuffer, &self.player.pos, self.player.fishing_pos);
         for player in &model.players {
+            if player.id == self.player_id {
+                continue;
+            }
             let Some(pos) = self.interpolated.get(&player.id) else { continue };
             let pos = pos.get();
             self.draw_player(framebuffer, &pos, None);
