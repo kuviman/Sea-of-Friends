@@ -60,11 +60,13 @@ impl Model {
 pub enum Message {
     Ping,
     Update(Player),
+    Catch(Id),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Event {
     Pong,
+    Reel { player: Id, fish: Id },
 }
 
 impl simple_net::Model for Model {
@@ -95,12 +97,15 @@ impl simple_net::Model for Model {
                     *self.players.get_mut(player_id).unwrap() = data;
                 }
             }
+            Message::Catch(id) => {
+                self.fishes.remove(&id);
+            }
         }
         vec![]
     }
 
     fn tick(&mut self, events: &mut Vec<Self::Event>) {
         let delta_time = 1.0 / Self::TICKS_PER_SECOND;
-        self.update_fishes(delta_time);
+        self.update_fishes(delta_time, events);
     }
 }

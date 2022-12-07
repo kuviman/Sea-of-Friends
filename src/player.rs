@@ -5,7 +5,9 @@ pub enum FishingState {
     Idle,
     Spinning,
     Casting(Vec2<f32>),
-    Fishing(Vec2<f32>),
+    Waiting(Vec2<f32>),
+    PreReeling { fish: Id, bobber_pos: Vec2<f32> },
+    Reeling { fish: Id, bobber_pos: Vec2<f32> },
 }
 
 #[derive(HasId, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -33,26 +35,40 @@ impl Player {
 impl Game {
     pub fn update_local_player_data(&mut self, delta_time: f32) {
         let model = self.model.get();
-        self.player_casting_times.retain(|id, _| {
+        for player in itertools::chain![
             model
                 .players
-                .get(id)
-                .and_then(|player| match player.fishing_state {
-                    FishingState::Casting(_) => Some(()),
-                    _ => None,
-                })
-                .is_some()
-        });
-        for player in &model.players {
-            if let FishingState::Casting(_) = player.fishing_state {
-                *self.player_casting_times.entry(player.id).or_default() += delta_time;
+                .iter()
+                .filter(|player| player.id != self.player_id),
+            std::iter::once(&self.player),
+        ] {
+            let time = match player.fishing_state {
+                FishingState::Casting(_) => Some(1.0),
+                FishingState::PreReeling { .. } => Some(1.0),
+                FishingState::Reeling { .. } => Some(1.0),
+                _ => None,
+            };
+            if let Some(time) = time {
+                *self.player_timings.entry(player.id).or_default() += delta_time / time;
+            } else {
+                self.player_timings.remove(&player.id);
             }
         }
-        if let Some(time) = self.player_casting_times.get(&self.player_id) {
+        if let Some(time) = self.player_timings.get(&self.player_id) {
             if *time > 1.0 {
-                if let FishingState::Casting(pos) = self.player.fishing_state {
-                    self.player.fishing_state = FishingState::Fishing(pos);
+                match self.player.fishing_state {
+                    FishingState::Casting(bobber_pos) => {
+                        self.player.fishing_state = FishingState::Waiting(bobber_pos);
+                    }
+                    FishingState::PreReeling { fish, bobber_pos } => {
+                        self.player.fishing_state = FishingState::Reeling { fish, bobber_pos };
+                    }
+                    FishingState::Reeling { fish, bobber_pos } => {
+                        self.player.fishing_state = FishingState::Waiting(bobber_pos);
+                    }
+                    _ => {}
                 }
+                self.player_timings.remove(&self.player_id);
             }
         }
     }
@@ -98,7 +114,7 @@ impl Game {
             &self.assets.player,
         );
         let mut fishing_rod_rot = None;
-        let mut bobber_pos = None;
+        let mut bobber = None;
         match &player.fishing_state {
             FishingState::Idle => {}
             FishingState::Spinning => {
@@ -106,18 +122,22 @@ impl Game {
             }
             FishingState::Casting(target_pos) => {
                 let t = self
-                    .player_casting_times
+                    .player_timings
                     .get(&player.id)
                     .copied()
                     .unwrap_or(0.0)
                     .min(1.0);
                 fishing_rod_rot = Some(t);
                 let start_pos = pos.pos.extend(1.0);
-                bobber_pos = Some(start_pos * (1.0 - t) + target_pos.extend(0.0) * t);
+                bobber = Some(start_pos * (1.0 - t) + target_pos.extend(0.0) * t);
             }
-            FishingState::Fishing(target_pos) => {
+            FishingState::Waiting(bobber_pos) | FishingState::PreReeling { bobber_pos, .. } => {
                 fishing_rod_rot = Some(0.5);
-                bobber_pos = Some(target_pos.extend(0.0));
+                bobber = Some(bobber_pos.extend(0.0));
+            }
+            FishingState::Reeling { fish, bobber_pos } => {
+                fishing_rod_rot = Some(1.0);
+                bobber = Some(bobber_pos.extend(-1.0));
             }
         }
         // Draw fishing rod
@@ -135,7 +155,7 @@ impl Game {
             self.draw_quad(framebuffer, fishing_rod_matrix, texture);
 
             // Bobber
-            if let Some(bobber_pos) = bobber_pos {
+            if let Some(bobber_pos) = bobber {
                 let fishing_rod_pos = (fishing_rod_matrix * vec4(0.0, 0.0, 1.0, 1.0)).xyz();
                 ugli::draw(
                     framebuffer,

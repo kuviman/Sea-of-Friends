@@ -35,7 +35,7 @@ pub struct Game {
     white_texture: ugli::Texture,
     player: Player,
     player_control: PlayerMovementControl,
-    player_casting_times: HashMap<Id, f32>,
+    player_timings: HashMap<Id, f32>,
     quad: ugli::VertexBuffer<ObjVertex>,
     ping_time: f32,
     send_ping: bool,
@@ -93,7 +93,7 @@ impl Game {
             interpolated: HashMap::new(),
             ping_time: 0.0,
             send_ping: false,
-            player_casting_times: HashMap::new(),
+            player_timings: HashMap::new(),
         }
     }
 
@@ -286,6 +286,14 @@ impl geng::State for Game {
                     }
                     self.send_ping = true;
                 }
+                Event::Reel { player, fish } => {
+                    if player == self.player_id {
+                        if let FishingState::Waiting(bobber_pos) = self.player.fishing_state {
+                            self.player.fishing_state =
+                                FishingState::PreReeling { fish, bobber_pos };
+                        }
+                    }
+                }
             }
         }
         self.ping_time += delta_time;
@@ -306,13 +314,18 @@ impl geng::State for Game {
             geng::Event::MouseDown { position, button } => {
                 let pos = self.world_pos(position.map(|x| x as f32));
                 match button {
-                    geng::MouseButton::Left => {
-                        if let FishingState::Idle = self.player.fishing_state {
+                    geng::MouseButton::Left => match self.player.fishing_state {
+                        FishingState::Idle => {
                             self.player.fishing_state = FishingState::Spinning;
-                        } else {
+                        }
+                        FishingState::Reeling { fish, .. } => {
+                            self.model.send(Message::Catch(fish));
                             self.player.fishing_state = FishingState::Idle;
                         }
-                    }
+                        _ => {
+                            self.player.fishing_state = FishingState::Idle;
+                        }
+                    },
                     geng::MouseButton::Right => {
                         self.player_control = PlayerMovementControl::GoTo(pos);
                     }

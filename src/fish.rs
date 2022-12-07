@@ -27,7 +27,20 @@ impl Fish {
 }
 
 impl Model {
-    pub fn update_fishes(&mut self, delta_time: f32) {
+    pub fn update_fishes(&mut self, delta_time: f32, events: &mut Vec<Event>) {
+        let reeling_fishes: HashSet<Id> = self
+            .players
+            .iter()
+            .flat_map(|player| {
+                if let FishingState::Reeling { fish, .. } | FishingState::PreReeling { fish, .. } =
+                    player.fishing_state
+                {
+                    Some(fish)
+                } else {
+                    None
+                }
+            })
+            .collect();
         for fish in &mut self.fishes {
             if (fish.pos.pos - fish.target_pos).len() < 1.0 {
                 const D: f32 = 10.0;
@@ -35,21 +48,56 @@ impl Model {
                     vec2(global_rng().gen_range(-D..D), global_rng().gen_range(-D..D));
                 fish.scared = false;
             }
+
+            // Scaring
+            let run_away_distance = 5.0;
             for player in &self.players {
                 if player.pos.vel.len() < 1.0 {
                     continue;
                 }
                 let scare_distance = 2.0;
-                let run_away_distance = 5.0;
                 if (fish.pos.pos - player.pos.pos).len() < scare_distance {
                     fish.target_pos = player.pos.pos
                         + (fish.pos.pos - player.pos.pos).normalize_or_zero() * run_away_distance;
                     fish.scared = true;
                 }
             }
+
+            // Fishing attraction
+            if !reeling_fishes.contains(&fish.id) && !fish.scared {
+                for player in &mut self.players {
+                    let bobber_attract_distance = 2.0;
+                    if let FishingState::Waiting(bobber_pos) = player.fishing_state {
+                        if (bobber_pos - fish.pos.pos).len() < bobber_attract_distance {
+                            fish.target_pos = fish.pos.pos;
+                            fish.pos.rot = (bobber_pos - fish.pos.pos).arg();
+                            if global_rng().gen_bool(0.005) {
+                                fish.pos.pos = bobber_pos;
+                                fish.target_pos = bobber_pos
+                                    + vec2(run_away_distance, 0.0)
+                                        .rotate(global_rng().gen_range(0.0..2.0 * f32::PI));
+                                fish.scared = true;
+                                player.fishing_state = FishingState::PreReeling {
+                                    fish: fish.id,
+                                    bobber_pos,
+                                };
+                                events.push(Event::Reel {
+                                    player: player.id,
+                                    fish: fish.id,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            let target_pos = if reeling_fishes.contains(&fish.id) {
+                fish.pos.pos
+            } else {
+                fish.target_pos
+            };
             update_movement(
                 &mut fish.pos,
-                fish.target_pos,
+                target_pos,
                 if fish.scared {
                     MovementProps {
                         max_speed: 3.0,
@@ -82,8 +130,24 @@ impl Game {
     }
     pub fn draw_fish(&self, framebuffer: &mut ugli::Framebuffer, fish: &Fish, pos: &Position) {
         let texture = &self.assets.fishes[fish.index];
-        let matrix = Mat4::translate(pos.pos.extend(-1.0))
-            * Mat4::rotate_z(pos.rot)
+        let matrix = Mat4::translate(
+            // {
+            //     let mut pos = pos.pos;
+            //     for player in &self.model.get().players {
+            //         if let FishingState::Reeling {
+            //             fish: fish_id,
+            //             bobber_pos,
+            //         } = player.fishing_state
+            //         {
+            //             if fish_id == fish.id {
+            //                 pos = bobber_pos;
+            //             }
+            //         }
+            //     }
+            //     pos
+            // }
+            pos.pos.extend(-1.0),
+        ) * Mat4::rotate_z(pos.rot)
             * Mat4::scale(texture.size().map(|x| x as f32 / 500.0).extend(1.0))
             * Mat4::rotate_x(f32::PI / 2.0);
         ugli::draw(
