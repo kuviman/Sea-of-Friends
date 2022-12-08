@@ -322,6 +322,9 @@ impl geng::State for Game {
                     geng::MouseButton::Right => {
                         self.player_control = PlayerMovementControl::GoTo(pos);
                     }
+                    geng::MouseButton::Middle => {
+                        self.player.pos.pos = pos;
+                    }
                     _ => {}
                 }
             }
@@ -345,6 +348,10 @@ impl geng::State for Game {
                 {
                     self.player_control = PlayerMovementControl::GoTo(pos);
                 }
+            }
+            geng::Event::Wheel { delta } => {
+                self.camera.distance =
+                    (self.camera.distance * 1.01f32.powf(-delta as f32)).clamp(1.0, 300.0);
             }
             _ => {}
         }
