@@ -8,6 +8,7 @@ pub struct MapGeometry {
     pub land: ugli::VertexBuffer<ObjVertex>,
     pub edge: ugli::VertexBuffer<ObjVertex>,
     pub water: ugli::VertexBuffer<ObjVertex>,
+    pub edge_segments: Vec<[Vec2<f32>; 2]>,
 }
 
 pub fn create_map_geometry(geng: &Geng, assets: &Assets) -> MapGeometry {
@@ -44,6 +45,7 @@ pub fn create_map_geometry(geng: &Geng, assets: &Assets) -> MapGeometry {
     let mut edge = Vec::new();
     let mut water = Vec::new();
     let mut land = Vec::new();
+    let mut edge_segments = Vec::new();
     for tri in triangles.chunks(3) {
         let a = &tri[0];
         let b = &tri[1];
@@ -74,6 +76,7 @@ pub fn create_map_geometry(geng: &Geng, assets: &Assets) -> MapGeometry {
         if zeros.len() == 2 {
             let z1 = zeros[0];
             let z2 = zeros[1];
+            edge_segments.push([z1, z2]);
             let quad = [
                 z1.extend(0.0),
                 z1.extend(1.0),
@@ -116,6 +119,30 @@ pub fn create_map_geometry(geng: &Geng, assets: &Assets) -> MapGeometry {
         land: ugli::VertexBuffer::new_static(geng.ugli(), land),
         edge: ugli::VertexBuffer::new_static(geng.ugli(), edge),
         water: ugli::VertexBuffer::new_static(geng.ugli(), water),
+        edge_segments,
+    }
+}
+
+impl MapGeometry {
+    pub fn vec_to_edge(&self, point: Vec2<f32>) -> Vec2<f32> {
+        fn to_segment(p1: Vec2<f32>, p2: Vec2<f32>, point: Vec2<f32>) -> Vec2<f32> {
+            if Vec2::dot(point - p1, p2 - p1) < 0.0 {
+                return p1 - point;
+            }
+            if Vec2::dot(point - p2, p1 - p2) < 0.0 {
+                return p2 - point;
+            }
+            let n = (p2 - p1).rotate_90();
+            // dot(point + n * t - p1, n) = 0
+            // dot(point - p1, n) + dot(n, n) * t = 0
+            let t = Vec2::dot(p1 - point, n) / Vec2::dot(n, n);
+            n * t
+        }
+        self.edge_segments
+            .iter()
+            .map(|&[p1, p2]| to_segment(p1, p2, point))
+            .min_by_key(|v| r32(v.len_sqr()))
+            .unwrap()
     }
 }
 
