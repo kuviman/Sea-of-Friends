@@ -196,22 +196,23 @@ impl geng::State for Game {
             None,
         );
 
-        // ugli::draw(
-        //     framebuffer,
-        //     &self.assets.shaders.land,
-        //     ugli::DrawMode::Triangles,
-        //     &self.land_geometry,
-        //     (
-        //         ugli::uniforms! {
-        //             u_heightmap: &self.assets.map,
-        //         },
-        //         geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
-        //     ),
-        //     ugli::DrawParameters {
-        //         depth_func: Some(ugli::DepthFunc::Less),
-        //         ..default()
-        //     },
-        // );
+        ugli::draw(
+            framebuffer,
+            &self.assets.shaders.land,
+            ugli::DrawMode::Triangles,
+            &self.land_geometry,
+            (
+                ugli::uniforms! {
+                    u_heightmap: &self.assets.map,
+                    u_texture: &self.assets.map_color,
+                },
+                geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
+            ),
+            ugli::DrawParameters {
+                depth_func: Some(ugli::DepthFunc::Less),
+                ..default()
+            },
+        );
         self.draw_fishes(framebuffer);
         self.draw_players(framebuffer);
 
