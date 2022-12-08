@@ -41,7 +41,7 @@ pub struct Game {
     quad: ugli::VertexBuffer<ObjVertex>,
     ping_time: f32,
     send_ping: bool,
-    land_geometry: ugli::VertexBuffer<ObjVertex>,
+    map_geometry: MapGeometry,
 }
 
 impl Game {
@@ -93,7 +93,7 @@ impl Game {
                     },
                 ],
             ),
-            land_geometry: create_land_geometry(geng, assets),
+            map_geometry: create_map_geometry(geng, assets),
             interpolated: HashMap::new(),
             ping_time: 0.0,
             send_ping: false,
@@ -173,7 +173,7 @@ impl geng::State for Game {
             framebuffer,
             &self.assets.shaders.land,
             ugli::DrawMode::Triangles,
-            &self.land_geometry,
+            &self.map_geometry.land,
             (
                 ugli::uniforms! {
                     u_heightmap: &self.assets.map,
@@ -209,7 +209,23 @@ impl geng::State for Game {
                 framebuffer,
                 &self.assets.shaders.land2,
                 ugli::DrawMode::Triangles,
-                &self.land_geometry,
+                &self.map_geometry.land,
+                (
+                    ugli::uniforms! {
+                        u_heightmap: &self.assets.map,
+                    },
+                    geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
+                ),
+                ugli::DrawParameters {
+                    depth_func: Some(ugli::DepthFunc::Less),
+                    ..default()
+                },
+            );
+            ugli::draw(
+                framebuffer,
+                &self.assets.shaders.land2,
+                ugli::DrawMode::Triangles,
+                &self.map_geometry.edge,
                 (
                     ugli::uniforms! {
                         u_heightmap: &self.assets.map,
@@ -226,21 +242,37 @@ impl geng::State for Game {
         ugli::draw(
             framebuffer,
             &self.assets.shaders.water,
-            ugli::DrawMode::TriangleFan,
-            &self.quad,
+            ugli::DrawMode::Triangles,
+            &self.map_geometry.water,
             (
                 ugli::uniforms! {
                     surfaceNoise: &self.assets.surface_noise,
                     distortNoise: &self.assets.distort_noise,
                     u_depth_texture: &depth_texture,
                     u_framebuffer_size: self.framebuffer_size,
-                    u_model_matrix: Mat4::rotate_x(f32::PI / 2.0) * Mat4::scale_uniform(100.0),
+                    u_model_matrix: Mat4::identity(),
                     u_time: self.time,
                 },
                 geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
             ),
             ugli::DrawParameters {
                 blend_mode: Some(ugli::BlendMode::default()),
+                depth_func: Some(ugli::DepthFunc::Less),
+                ..default()
+            },
+        );
+        ugli::draw(
+            framebuffer,
+            &self.assets.shaders.edge,
+            ugli::DrawMode::Triangles,
+            &self.map_geometry.edge,
+            (
+                ugli::uniforms! {
+                    u_time: self.time,
+                },
+                geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
+            ),
+            ugli::DrawParameters {
                 depth_func: Some(ugli::DepthFunc::Less),
                 ..default()
             },

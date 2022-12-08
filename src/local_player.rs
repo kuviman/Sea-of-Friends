@@ -58,18 +58,20 @@ impl Game {
         update_movement(&mut self.player.pos, target_pos, props, delta_time);
 
         // handle collisions
-        for other_player in &self.model.get().players {
-            if other_player.id == self.player_id {
-                continue;
-            }
-            let Some(p) = self.interpolated.get(&other_player.id) else { continue };
-            let delta_pos = self.player.pos.pos - p.get().pos;
-            let r = 1.0;
-            if delta_pos.len() < 2.0 * r {
-                let n = delta_pos.normalize_or_zero();
-                let penetration = 2.0 * r - delta_pos.len();
-                self.player.pos.pos += n * penetration;
-                self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
+        if Map::get().get_height(self.player.pos.pos) < 0.0 {
+            for other_player in &self.model.get().players {
+                if other_player.id == self.player_id {
+                    continue;
+                }
+                let Some(p) = self.interpolated.get(&other_player.id) else { continue };
+                let delta_pos = self.player.pos.pos - p.get().pos;
+                let r = 1.0;
+                if delta_pos.len() < 2.0 * r {
+                    let n = delta_pos.normalize_or_zero();
+                    let penetration = 2.0 * r - delta_pos.len();
+                    self.player.pos.pos += n * penetration;
+                    self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
+                }
             }
         }
     }
