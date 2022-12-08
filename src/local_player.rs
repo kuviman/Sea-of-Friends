@@ -74,12 +74,62 @@ impl Game {
                 }
             }
         }
+        if let FishingState::Attached(id) = self.player.fishing_state {
+            if let Some(other_player) = self.model.get().players.get(&id) {
+                if let Some(p) = self.interpolated.get(&id) {
+                    let delta_pos = self.player.pos.pos - p.get().pos;
+                    const LINE_LEN: f32 = 5.0;
+                    if delta_pos.len() > LINE_LEN {
+                        let n = delta_pos.normalize_or_zero();
+                        let penetration = delta_pos.len() - LINE_LEN;
+                        self.player.pos.pos -= n * penetration;
+                        self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).max(0.0);
+                    }
+                }
+            } else {
+                self.player.fishing_state = FishingState::Idle;
+            }
+        }
         let to_edge = self.map_geometry.vec_to_edge(self.player.pos.pos);
         if to_edge.len() < player_radius {
             let n = -to_edge.normalize_or_zero();
             let penetration = player_radius - to_edge.len();
             self.player.pos.pos += n * penetration;
             self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
+        }
+
+        // Fishing
+        if let Some(time) = self.player_timings.get(&self.player_id) {
+            if *time > 1.0 {
+                match self.player.fishing_state {
+                    FishingState::Casting(bobber_pos) => {
+                        if Map::get().get_height(bobber_pos) < 0.0 {
+                            self.player.fishing_state = FishingState::Waiting(bobber_pos);
+                        } else {
+                            self.player.fishing_state = FishingState::Idle;
+                        }
+                        for other_player in &self.model.get().players {
+                            let Some(p) = self.interpolated.get(&other_player.id) else { continue };
+                            if (p.get().pos - bobber_pos).len() < player_radius {
+                                if other_player.id == self.player_id {
+                                    self.player.fishing_state = FishingState::Idle;
+                                } else {
+                                    self.player.fishing_state =
+                                        FishingState::Attached(other_player.id);
+                                }
+                            }
+                        }
+                    }
+                    FishingState::PreReeling { fish, bobber_pos } => {
+                        self.player.fishing_state = FishingState::Reeling { fish, bobber_pos };
+                    }
+                    FishingState::Reeling { fish, bobber_pos } => {
+                        self.player.fishing_state = FishingState::Waiting(bobber_pos);
+                    }
+                    _ => {}
+                }
+                self.player_timings.remove(&self.player_id);
+            }
         }
     }
 }

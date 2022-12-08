@@ -8,6 +8,7 @@ pub enum FishingState {
     Waiting(Vec2<f32>),
     PreReeling { fish: Id, bobber_pos: Vec2<f32> },
     Reeling { fish: Id, bobber_pos: Vec2<f32> },
+    Attached(Id),
 }
 
 #[derive(HasId, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -52,23 +53,6 @@ impl Game {
                 *self.player_timings.entry(player.id).or_default() += delta_time / time;
             } else {
                 self.player_timings.remove(&player.id);
-            }
-        }
-        if let Some(time) = self.player_timings.get(&self.player_id) {
-            if *time > 1.0 {
-                match self.player.fishing_state {
-                    FishingState::Casting(bobber_pos) => {
-                        self.player.fishing_state = FishingState::Waiting(bobber_pos);
-                    }
-                    FishingState::PreReeling { fish, bobber_pos } => {
-                        self.player.fishing_state = FishingState::Reeling { fish, bobber_pos };
-                    }
-                    FishingState::Reeling { fish, bobber_pos } => {
-                        self.player.fishing_state = FishingState::Waiting(bobber_pos);
-                    }
-                    _ => {}
-                }
-                self.player_timings.remove(&self.player_id);
             }
         }
     }
@@ -141,6 +125,14 @@ impl Game {
             FishingState::Reeling { fish, bobber_pos } => {
                 fishing_rod_rot = Some(1.0);
                 bobber = Some(bobber_pos.extend(-1.0));
+            }
+            FishingState::Attached(id) => {
+                if let Some(player) = self.model.get().players.get(&id) {
+                    fishing_rod_rot = Some(1.0);
+                    if let Some(p) = self.interpolated.get(&id) {
+                        bobber = Some(p.get().pos.extend(0.5));
+                    }
+                }
             }
         }
         // Draw fishing rod
