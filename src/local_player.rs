@@ -34,11 +34,22 @@ impl Game {
             self.player_control = PlayerMovementControl::GoDirection(wasd);
         }
 
-        let props = MovementProps {
-            max_speed: 2.0,
-            max_rotation_speed: 2.0,
-            angular_acceleration: 1.0,
-            acceleration: 1.0,
+        let props = if Map::get().get_height(self.player.pos.pos) > 0.0 {
+            MovementProps {
+                max_speed: 2.0,
+                max_rotation_speed: 2.0,
+                angular_acceleration: 1.0,
+                acceleration: 10.0,
+                water: false,
+            }
+        } else {
+            MovementProps {
+                max_speed: 2.0,
+                max_rotation_speed: 2.0,
+                angular_acceleration: 1.0,
+                acceleration: 1.0,
+                water: true,
+            }
         };
         let target_pos = match self.player_control {
             PlayerMovementControl::GoTo(pos) => pos,

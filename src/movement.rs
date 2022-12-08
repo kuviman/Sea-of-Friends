@@ -13,6 +13,7 @@ pub struct MovementProps {
     pub max_rotation_speed: f32,
     pub angular_acceleration: f32,
     pub acceleration: f32,
+    pub water: bool,
 }
 
 pub fn update_movement(
@@ -32,12 +33,14 @@ pub fn update_movement(
         .clamp_abs(props.max_rotation_speed);
     pos.w += (target_w - pos.w).clamp_abs(props.angular_acceleration);
     pos.rot += pos.w * delta_time;
-    let target_vel = delta_pos.clamp_len(..=props.max_speed)
-        * Vec2::dot(
+    let mut target_vel = delta_pos.clamp_len(..=props.max_speed);
+    if props.water {
+        target_vel *= Vec2::dot(
             delta_pos.normalize_or_zero(),
             vec2(1.0, 0.0).rotate(pos.rot),
         )
         .max(0.0);
+    }
     pos.vel += (target_vel - pos.vel).clamp_len(..=props.acceleration * delta_time);
     pos.pos += pos.vel * delta_time;
 }

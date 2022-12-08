@@ -1,6 +1,5 @@
 use super::*;
 
-
 #[derive(HasId, PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Fish {
     pub id: Id,
@@ -28,7 +27,7 @@ impl Fish {
 }
 
 pub struct FishMovementUpdate {
-    vel: Vec2<f32>
+    vel: Vec2<f32>,
 }
 
 impl Model {
@@ -62,8 +61,15 @@ impl Model {
         return result.sub(fish.pos.vel) / 8.0 * delta_time;
     }
     pub fn currents(fish: &Fish, delta_time: f32) -> Vec2<f32> {
-        let scaled_pos = fish.pos.pos / 5.0 + Vec2{ x: fish.index as f32, y: (fish.index % 2) as f32 };
-        return Vec2{x: scaled_pos.x.cos() + scaled_pos.y.cos(), y: scaled_pos.x.sin() + scaled_pos.y.sin()} * delta_time;
+        let scaled_pos = fish.pos.pos / 5.0
+            + Vec2 {
+                x: fish.index as f32,
+                y: (fish.index % 2) as f32,
+            };
+        return Vec2 {
+            x: scaled_pos.x.cos() + scaled_pos.y.cos(),
+            y: scaled_pos.x.sin() + scaled_pos.y.sin(),
+        } * delta_time;
     }
     pub fn update_fishes(&mut self, delta_time: f32, events: &mut Vec<Event>) {
         let reeling_fishes: HashSet<Id> = self
@@ -83,10 +89,14 @@ impl Model {
         let mut updates: HashMap<Id, FishMovementUpdate> = HashMap::new();
         for fish in &self.fishes {
             let nearby_fish: Vec<&Fish> = self
-            .fishes
-            .iter()
-            .filter(|f| f.pos.pos.sub(fish.pos.pos).len() < 3.0 && f.id() != fish.id() && f.index == fish.index)
-            .collect();
+                .fishes
+                .iter()
+                .filter(|f| {
+                    f.pos.pos.sub(fish.pos.pos).len() < 3.0
+                        && f.id() != fish.id()
+                        && f.index == fish.index
+                })
+                .collect();
             let v1 = Self::flock(&fish, delta_time, &nearby_fish);
             let v2 = Self::avoid(&fish, delta_time, &nearby_fish);
             let v3 = Self::match_velocity(&fish, delta_time, &nearby_fish);
@@ -103,8 +113,6 @@ impl Model {
             //         fish.target_pos = fish.pos.pos + fish.pos.pos.sub(fish.target_pos).normalize() * 5.0
             //     }
             // }
-
-
 
             updates.insert(fish.id, FishMovementUpdate { vel: v });
         }
@@ -128,15 +136,21 @@ impl Model {
                 continue;
             }
             if fish.scared {
-                update_movement(&mut fish.pos, fish.target_pos, MovementProps {
-                                max_speed: 3.0,
-                                max_rotation_speed: 5.0,
-                                angular_acceleration: 10.0,
-                                acceleration: 3.0,
-                            }, delta_time);
-            if (fish.pos.pos - fish.target_pos).len() < 1.0 {
-                fish.scared = false;
-            }
+                update_movement(
+                    &mut fish.pos,
+                    fish.target_pos,
+                    MovementProps {
+                        max_speed: 3.0,
+                        max_rotation_speed: 5.0,
+                        angular_acceleration: 10.0,
+                        acceleration: 3.0,
+                        water: true,
+                    },
+                    delta_time,
+                );
+                if (fish.pos.pos - fish.target_pos).len() < 1.0 {
+                    fish.scared = false;
+                }
                 continue;
             }
             // Attraction
@@ -176,6 +190,7 @@ impl Model {
                         max_rotation_speed: 2.0,
                         angular_acceleration: 1.0,
                         acceleration: 0.5,
+                        water: true,
                     },
                     delta_time,
                 );

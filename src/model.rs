@@ -29,23 +29,7 @@ pub struct Model {
     pub fishes: Collection<Fish>,
 }
 
-static mut MAP: Option<image::RgbaImage> = None;
-
 impl Model {
-    pub fn get_map_color(pos: Vec2<f32>) -> image::Rgba<u8> {
-        let map = unsafe {
-            MAP.get_or_insert_with(|| {
-                image::open(static_path().join("assets").join("map.png"))
-                    .unwrap()
-                    .into_rgba8()
-            })
-        };
-        const SIZE: f32 = 100.0;
-        let pos = pos.map(|x| {
-            ((((x + SIZE) / (2.0 * SIZE)) * map.width() as f32) as u32).clamp(0, map.width() - 1)
-        });
-        *map.get_pixel(pos.x, pos.y)
-    }
     pub fn new() -> Self {
         let mut id_gen = IdGen::new();
         let fish_types: Vec<String> = serde_json::from_reader(

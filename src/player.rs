@@ -86,28 +86,31 @@ impl Game {
     }
     fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player, pos: &Position) {
         let model_matrix = Mat4::translate(pos.pos.extend(0.0)) * Mat4::rotate_z(pos.rot);
-        for mesh in &self.assets.boat.meshes {
-            ugli::draw(
-                framebuffer,
-                &self.assets.shaders.obj,
-                ugli::DrawMode::Triangles,
-                &mesh.geometry,
-                (
-                    ugli::uniforms! {
-                        u_model_matrix: model_matrix,
-                        u_texture: mesh.material.texture.as_deref().unwrap_or(&self.white_texture),
+        let height = Map::get().get_height(pos.pos);
+        if height < 0.0 {
+            for mesh in &self.assets.boat.meshes {
+                ugli::draw(
+                    framebuffer,
+                    &self.assets.shaders.obj,
+                    ugli::DrawMode::Triangles,
+                    &mesh.geometry,
+                    (
+                        ugli::uniforms! {
+                            u_model_matrix: model_matrix,
+                            u_texture: mesh.material.texture.as_deref().unwrap_or(&self.white_texture),
+                        },
+                        geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
+                    ),
+                    ugli::DrawParameters {
+                        depth_func: Some(ugli::DepthFunc::Less),
+                        ..default()
                     },
-                    geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
-                ),
-                ugli::DrawParameters {
-                    depth_func: Some(ugli::DepthFunc::Less),
-                    ..default()
-                },
-            );
+                );
+            }
         }
         self.draw_quad(
             framebuffer,
-            Mat4::translate(pos.pos.extend(0.0))
+            Mat4::translate(pos.pos.extend(height.max(0.0)))
                 * Mat4::rotate_x(-self.camera.rot_v)
                 * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
                 * Mat4::translate(vec3(0.0, 0.0, 1.0)),

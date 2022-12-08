@@ -5,6 +5,7 @@ pub mod assets;
 pub mod camera;
 pub mod fish;
 pub mod interpolation;
+pub mod land;
 pub mod local_player;
 pub mod model;
 pub mod movement;
@@ -16,6 +17,7 @@ pub use assets::*;
 pub use camera::*;
 pub use fish::*;
 pub use interpolation::*;
+pub use land::*;
 pub use local_player::*;
 pub use model::*;
 pub use movement::*;
@@ -57,7 +59,7 @@ impl Game {
             geng: geng.clone(),
             assets: assets.clone(),
             camera: Camera {
-                fov: f32::PI / 2.0,
+                fov: f32::PI / 3.0,
                 pos: Vec3::ZERO,
                 distance: 10.0,
                 rot_h: 0.0,
@@ -91,36 +93,7 @@ impl Game {
                     },
                 ],
             ),
-            land_geometry: {
-                let mut vs = Vec::new();
-                const N: i32 = 128;
-                const SIZE: f32 = 100.0;
-                for x in (-N..N).skip(1).step_by(2) {
-                    for y in (-N..N).skip(1).step_by(2) {
-                        let vertex = |x, y| ObjVertex {
-                            a_v: vec3(x as f32 / N as f32 * SIZE, y as f32 / N as f32 * SIZE, 0.0),
-                            a_uv: vec2(
-                                x as f32 / N as f32 * 0.5 + 0.5,
-                                y as f32 / N as f32 * 0.5 + 0.5,
-                            ),
-                            a_vn: Vec3::ZERO,
-                        };
-                        let mut quad = |dx, dy| {
-                            vs.push(vertex(x, y));
-                            vs.push(vertex(x + dx, y));
-                            vs.push(vertex(x + dx, y + dy));
-                            vs.push(vertex(x, y));
-                            vs.push(vertex(x + dx, y + dy));
-                            vs.push(vertex(x, y + dy));
-                        };
-                        quad(-1, -1);
-                        quad(1, -1);
-                        quad(1, 1);
-                        quad(-1, 1);
-                    }
-                }
-                ugli::VertexBuffer::new_static(geng.ugli(), vs)
-            },
+            land_geometry: create_land_geometry(geng, assets),
             interpolated: HashMap::new(),
             ping_time: 0.0,
             send_ping: false,
