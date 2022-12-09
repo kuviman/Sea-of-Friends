@@ -4,8 +4,8 @@ use super::*;
 pub struct Material {
     pub name: String,
     pub texture: Option<Rc<ugli::Texture>>,
-    // pub ambient_color: Rgba<f32>,
-    // pub diffuse_color: Rgba<f32>,
+    pub ambient_color: Rgba<f32>,
+    pub diffuse_color: Rgba<f32>,
 }
 
 #[derive(ugli::Vertex, Debug, Copy, Clone)]
@@ -47,8 +47,8 @@ impl geng::LoadAsset for Obj {
             let mut current_material: Option<Material> = Some(Material {
                 name: "".to_owned(),
                 texture: None,
-                // ambient_color: Rgba::WHITE,
-                // diffuse_color: Rgba::WHITE,
+                ambient_color: Rgba::WHITE,
+                diffuse_color: Rgba::WHITE,
             });
             let mut current_geometry = Vec::new();
             let mut materials = HashMap::<String, Material>::new();
@@ -143,6 +143,8 @@ async fn parse_mtl(
 ) -> anyhow::Result<Vec<Material>> {
     struct MaterialFuture {
         name: String,
+        ambient_color: Rgba<f32>,
+        diffuse_color: Rgba<f32>,
         texture: geng::AssetFuture<Option<ugli::Texture>>,
     }
 
@@ -152,6 +154,8 @@ async fn parse_mtl(
             let texture = texture.unwrap().map(Rc::new);
             Material {
                 name: self.name,
+                ambient_color: self.ambient_color,
+                diffuse_color: self.diffuse_color,
                 texture,
             }
         }
@@ -182,6 +186,8 @@ async fn parse_mtl(
             let name = name.trim();
             materials.push(MaterialFuture {
                 name: current_name.to_owned(),
+                ambient_color: current_ambient_color,
+                diffuse_color: current_diffuse_color,
                 texture: mem::replace(&mut current_texture, future::ready(Ok(None)).boxed_local()),
                 // ambient_color: current_ambient_color,
                 // diffuse_color: current_diffuse_color,

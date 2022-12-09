@@ -73,10 +73,18 @@ impl Game {
         }
     }
     fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player, pos: &Position) {
-        let model_matrix = Mat4::translate(pos.pos.extend(0.0)) * Mat4::rotate_z(pos.rot);
         let height = Map::get().get_height(pos.pos);
         if height < 0.0 {
-            for mesh in &self.assets.boat.meshes {
+            let boat_type_index = player.boat_level.max(1) as usize - 1;
+            let model_matrix = Mat4::translate(pos.pos.extend(0.0))
+                * Mat4::rotate_z(pos.rot)
+                * Mat4::scale_uniform(self.assets.config.boat_types[boat_type_index].scale);
+            let obj = &[
+                &self.assets.rowboat,
+                &self.assets.bigboat,
+                &self.assets.airboat,
+            ][boat_type_index];
+            for mesh in &obj.meshes {
                 ugli::draw(
                     framebuffer,
                     &self.assets.shaders.obj,
@@ -84,6 +92,7 @@ impl Game {
                     &mesh.geometry,
                     (
                         ugli::uniforms! {
+                            u_color: mesh.material.diffuse_color,
                             u_model_matrix: model_matrix,
                             u_texture: mesh.material.texture.as_deref().unwrap_or(&self.white_texture),
                         },
@@ -177,6 +186,7 @@ impl Game {
                     }),
                     (
                         ugli::uniforms! {
+                            u_color: Rgba::WHITE,
                             u_model_matrix: Mat4::identity(),
                             u_texture: &self.white_texture,
                         },

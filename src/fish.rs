@@ -251,6 +251,7 @@ impl Game {
                 ugli::uniforms! {
                     u_model_matrix: matrix,
                     u_texture: texture,
+                    u_color: Rgba::WHITE,
                 },
                 geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
             ),

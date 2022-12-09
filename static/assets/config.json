@@ -7,11 +7,36 @@
             "y": 0
         }
     ],
-    "small_boat_shops": [
+    "boat_types": [
         {
-            "x": 0,
-            "y": 5
+            "cost": 0,
+            "scale": 1,
+            "shops": [
+                {
+                    "x": 0,
+                    "y": 5
+                }
+            ]
+        },
+        {
+            "cost": 0,
+            "scale": 2,
+            "shops": [
+                {
+                    "x": -2,
+                    "y": 5
+                }
+            ]
+        },
+        {
+            "cost": 0,
+            "scale": 3,
+            "shops": [
+                {
+                    "x": -4,
+                    "y": 5
+                }
+            ]
         }
-    ],
-    "small_boat_cost": 10
+    ]
 }

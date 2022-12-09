@@ -16,8 +16,14 @@ pub struct Config {
     pub inventory_size: usize,
     pub sea_color: Rgba<f32>,
     pub fish_shops: Vec<Vec2<f32>>,
-    pub small_boat_shops: Vec<Vec2<f32>>,
-    pub small_boat_cost: u32,
+    pub boat_types: Vec<BoatConfig>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BoatConfig {
+    pub cost: u32,
+    pub scale: f32,
+    pub shops: Vec<Vec2<f32>>,
 }
 
 #[derive(geng::Assets)]
@@ -29,7 +35,11 @@ pub struct ShopAssets {
 pub struct Assets {
     pub shaders: Shaders,
     #[asset(path = "1391 Rowboat.obj")]
-    pub boat: Obj,
+    pub rowboat: Obj,
+    #[asset(path = "boat2.obj")]
+    pub bigboat: Obj,
+    #[asset(path = "CUPIC_AIRSHIP.obj")]
+    pub airboat: Obj,
     pub bobber: ugli::Texture,
     pub player: ugli::Texture,
     pub config: Config,

@@ -126,6 +126,7 @@ impl Game {
             (
                 ugli::uniforms! {
                     u_model_matrix: matrix,
+                    u_color: Rgba::WHITE,
                     u_texture: texture,
                 },
                 geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
@@ -401,30 +402,34 @@ impl geng::State for Game {
                             }
                         }
                         {
-                            if let Some(small_boat_shop_distance) = self
-                                .assets
-                                .config
-                                .small_boat_shops
-                                .iter()
-                                .filter(|&&pos| {
-                                    let pos = pos.extend(Map::get().get_height(pos));
-                                    let ray = self.camera.pixel_ray(
-                                        self.framebuffer_size,
-                                        self.geng.window().mouse_pos().map(|x| x as f32),
-                                    );
-                                    Vec3::cross(ray.dir.normalize_or_zero(), pos - ray.from).len()
-                                        < 1.0
-                                })
-                                .map(|&pos| r32((pos - self.player.pos.pos).len()))
-                                .min()
+                            for (index, boat_type) in
+                                self.assets.config.boat_types.iter().enumerate()
                             {
-                                can_fish = false;
-                                if small_boat_shop_distance.raw() < 2.0 {
-                                    if self.money >= self.assets.config.small_boat_cost
-                                        && self.player.boat_level < 1
-                                    {
-                                        self.money -= self.assets.config.small_boat_cost;
-                                        self.player.boat_level = 1;
+                                let boat_level = index as u8 + 1;
+                                if let Some(distance) = boat_type
+                                    .shops
+                                    .iter()
+                                    .filter(|&&pos| {
+                                        let pos = pos.extend(Map::get().get_height(pos));
+                                        let ray = self.camera.pixel_ray(
+                                            self.framebuffer_size,
+                                            self.geng.window().mouse_pos().map(|x| x as f32),
+                                        );
+                                        Vec3::cross(ray.dir.normalize_or_zero(), pos - ray.from)
+                                            .len()
+                                            < 1.0
+                                    })
+                                    .map(|&pos| r32((pos - self.player.pos.pos).len()))
+                                    .min()
+                                {
+                                    can_fish = false;
+                                    if distance.raw() < 2.0 {
+                                        if self.money >= boat_type.cost
+                                            && self.player.boat_level < boat_level
+                                        {
+                                            self.money -= boat_type.cost;
+                                            self.player.boat_level = boat_level;
+                                        }
                                     }
                                 }
                             }
