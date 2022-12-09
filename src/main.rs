@@ -48,6 +48,7 @@ pub struct Game {
     map_geometry: MapGeometry,
     inventory: Vec<FishType>,
     hovered_inventory_slot: Option<usize>,
+    money: u32,
 }
 
 impl Game {
@@ -107,6 +108,7 @@ impl Game {
             player_timings: HashMap::new(),
             inventory: Vec::new(),
             hovered_inventory_slot: None,
+            money: 0,
         }
     }
 
@@ -371,27 +373,53 @@ impl geng::State for Game {
             geng::Event::MouseDown { position, button } => {
                 let pos = self.world_pos(position.map(|x| x as f32));
                 match button {
-                    geng::MouseButton::Left => match self.player.fishing_state {
-                        FishingState::Idle => {
-                            self.player.fishing_state = FishingState::Spinning;
-                        }
-                        FishingState::Reeling { fish, .. } => {
-                            self.model.send(Message::Catch(fish));
-                            if let Some(fish) = self.model.get().fishes.get(&fish) {
-                                self.inventory.push(fish.index);
-                                if self.inventory.len() > self.assets.config.inventory_size {
+                    geng::MouseButton::Left => {
+                        if let Some(index) = self.hovered_inventory_slot {
+                            if index < self.inventory.len() {
+                                let fish = self.inventory.remove(index);
+                                let fishing_shop_distance = self
+                                    .assets
+                                    .config
+                                    .fish_shops
+                                    .iter()
+                                    .map(|&pos| r32((pos - self.player.pos.pos).len()))
+                                    .min()
+                                    .unwrap()
+                                    .raw();
+                                if fishing_shop_distance < 2.0 {
+                                    self.money += 1;
+                                } else {
                                     self.model.send(Message::SpawnFish {
-                                        index: self.inventory.remove(0),
+                                        index: fish,
                                         pos: self.player.pos.pos,
                                     });
                                 }
                             }
-                            self.player.fishing_state = FishingState::Idle;
+                        } else {
+                            match self.player.fishing_state {
+                                FishingState::Idle => {
+                                    self.player.fishing_state = FishingState::Spinning;
+                                }
+                                FishingState::Reeling { fish, .. } => {
+                                    self.model.send(Message::Catch(fish));
+                                    if let Some(fish) = self.model.get().fishes.get(&fish) {
+                                        self.inventory.push(fish.index);
+                                        if self.inventory.len() > self.assets.config.inventory_size
+                                        {
+                                            self.model.send(Message::SpawnFish {
+                                                index: self.inventory.remove(0),
+                                                pos: self.player.pos.pos,
+                                            });
+                                        }
+                                    }
+                                    self.player.fishing_state = FishingState::Idle;
+                                }
+                                _ => {
+                                    self.player.fishing_state = FishingState::Idle;
+                                }
+                            }
                         }
-                        _ => {
-                            self.player.fishing_state = FishingState::Idle;
-                        }
-                    },
+                    }
                     geng::MouseButton::Right => {
                         self.player_control = PlayerMovementControl::GoTo(pos);
                     }

@@ -44,5 +44,16 @@ impl Game {
             .translate(pos);
             self.geng.draw_2d(framebuffer, &camera, &fish_card);
         }
+
+        self.geng.draw_2d(
+            framebuffer,
+            &camera,
+            &draw_2d::Text::unit(
+                &**self.geng.default_font(),
+                format!("$ {}", self.money),
+                Rgba::BLACK,
+            )
+            .translate(vec2(0.0, camera.fov / 2.0 - 1.0)),
+        );
     }
 }
