@@ -129,6 +129,7 @@ impl Game {
                     .unwrap_or(0.0)
                     .min(1.0);
                 fishing_rod_rot = Some(t);
+
                 // Parabolic bobber throw
                 let delta = *target_pos - pos.pos;
                 let length = delta.len();
@@ -139,8 +140,14 @@ impl Game {
                 bobber = Some(pos.extend(height));
             }
             FishingState::Waiting(bobber_pos) => {
-                fishing_rod_rot = Some(0.5);
                 let t = self.player_timings.get(&player.id).copied().unwrap_or(0.0);
+                {
+                    let t = t.min(1.0);
+                    let smoothstep = 3.0 * t * t - 2.0 * t * t * t;
+                    let rot = (1.0 - smoothstep) * 0.5 + 0.5;
+                    fishing_rod_rot = Some(rot);
+                }
+
                 // Damped oscillation
                 let gamma = 1.0; // damping coefficient
                 let frequency = 1.5 * f32::PI;
@@ -155,13 +162,19 @@ impl Game {
                 bobber = Some(bobber_pos.extend(0.0));
             }
             FishingState::Reeling { bobber_pos, .. } => {
-                fishing_rod_rot = Some(1.0);
                 let t = self
                     .player_timings
                     .get(&player.id)
                     .copied()
                     .unwrap_or(0.0)
                     .min(1.0);
+                // Damped oscillation
+                let gamma = 3.0; // damping coefficient
+                let frequency = 2.0 * f32::PI;
+                let amplitude = (-gamma * t).exp() * 0.5;
+                let rot = -amplitude * (frequency * t).cos() + 1.0;
+                fishing_rod_rot = Some(rot);
+
                 // Damped oscillation
                 let gamma = 3.0; // damping coefficient
                 let frequency = 4.0 * f32::PI;
