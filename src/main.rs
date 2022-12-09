@@ -374,7 +374,9 @@ impl geng::State for Game {
                 let pos = self.world_pos(position.map(|x| x as f32));
                 match button {
                     geng::MouseButton::Left => {
+                        let mut can_fish = true;
                         if let Some(index) = self.hovered_inventory_slot {
+                            can_fish = false;
                             if index < self.inventory.len() {
                                 let fish = self.inventory.remove(index);
                                 let fishing_shop_distance = self
@@ -395,7 +397,37 @@ impl geng::State for Game {
                                     });
                                 }
                             }
-                        } else {
+                        }
+                        {
+                            if let Some(small_boat_shop_distance) = self
+                                .assets
+                                .config
+                                .small_boat_shops
+                                .iter()
+                                .filter(|&&pos| {
+                                    let pos = pos.extend(Map::get().get_height(pos));
+                                    let ray = self.camera.pixel_ray(
+                                        self.framebuffer_size,
+                                        self.geng.window().mouse_pos().map(|x| x as f32),
+                                    );
+                                    Vec3::cross(ray.dir.normalize_or_zero(), pos - ray.from).len()
+                                        < 1.0
+                                })
+                                .map(|&pos| r32((pos - self.player.pos.pos).len()))
+                                .min()
+                            {
+                                can_fish = false;
+                                if small_boat_shop_distance.raw() < 2.0 {
+                                    if self.money >= self.assets.config.small_boat_cost
+                                        && self.player.boat_level < 1
+                                    {
+                                        self.money -= self.assets.config.small_boat_cost;
+                                        self.player.boat_level = 1;
+                                    }
+                                }
+                            }
+                        }
+                        if can_fish {
                             match self.player.fishing_state {
                                 FishingState::Idle => {
                                     self.player.fishing_state = FishingState::Spinning;

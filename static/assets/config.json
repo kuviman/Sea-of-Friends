@@ -6,5 +6,12 @@
             "x": -5,
             "y": 0
         }
-    ]
+    ],
+    "small_boat_shops": [
+        {
+            "x": 0,
+            "y": 5
+        }
+    ],
+    "small_boat_cost": 10
 }

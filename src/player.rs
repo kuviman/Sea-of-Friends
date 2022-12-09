@@ -17,6 +17,7 @@ pub struct Player {
     pub pos: Position,
     pub fishing_state: FishingState,
     pub fish_in_hands: Option<FishType>,
+    pub boat_level: u8,
 }
 
 impl Player {
@@ -31,6 +32,7 @@ impl Player {
             },
             fishing_state: FishingState::Idle,
             fish_in_hands: None,
+            boat_level: 0,
         }
     }
 }

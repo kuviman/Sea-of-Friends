@@ -90,12 +90,28 @@ impl Game {
                 self.player.fishing_state = FishingState::Idle;
             }
         }
-        let to_edge = self.map_geometry.vec_to_edge(self.player.pos.pos);
-        if to_edge.len() < player_radius {
-            let n = -to_edge.normalize_or_zero();
-            let penetration = player_radius - to_edge.len();
-            self.player.pos.pos += n * penetration;
-            self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
+        {
+            let to_edge = vec_to(&self.map_geometry.edge_segments, self.player.pos.pos);
+            if to_edge.len() < player_radius {
+                let n = -to_edge.normalize_or_zero();
+                let penetration = player_radius - to_edge.len();
+                self.player.pos.pos += n * penetration;
+                self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
+            }
+        }
+        if self.player.boat_level == 0 {
+            let to_shore = vec_to(&self.map_geometry.shore_segments, self.player.pos.pos);
+            let player_radius = if Map::get().get_height(self.player.pos.pos) < 0.0 {
+                player_radius
+            } else {
+                0.3
+            };
+            if to_shore.len() < player_radius {
+                let n = -to_shore.normalize_or_zero();
+                let penetration = player_radius - to_shore.len();
+                self.player.pos.pos += n * penetration;
+                self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
+            }
         }
         for &pos in &self.assets.config.fish_shops {
             let delta_pos = self.player.pos.pos - pos;
