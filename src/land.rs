@@ -9,6 +9,7 @@ pub struct MapGeometry {
     pub edge: ugli::VertexBuffer<ObjVertex>,
     pub water: ugli::VertexBuffer<ObjVertex>,
     pub edge_segments: Vec<[Vec2<f32>; 2]>,
+    pub deep_segments: Vec<[Vec2<f32>; 2]>,
     pub shore_segments: Vec<[Vec2<f32>; 2]>,
 }
 
@@ -136,12 +137,45 @@ pub fn create_map_geometry(geng: &Geng, assets: &Assets) -> MapGeometry {
             shore_segments.push([z1, z2]);
         }
     }
+
+    let mut deep_segments = Vec::new();
+    for tri in create_triangles() {
+        let a = tri[0];
+        let b = tri[1];
+        let c = tri[2];
+        let mut zeros = Vec::new();
+        let mut check = |a: Vec2<f32>, b: Vec2<f32>| {
+            let av = Map::get().get_height(a);
+            let bv = Map::get().get_height(b);
+            let mut a = (a, av);
+            let mut b = (b, bv);
+            if a.1 > b.1 {
+                mem::swap(&mut a, &mut b);
+            }
+            let mid = -1.0;
+            if a.1 < mid && b.1 >= mid {
+                let t = (mid - a.1) / (b.1 - a.1);
+                let z = a.0 + t * (b.0 - a.0);
+                zeros.push(z);
+            }
+        };
+        check(a, b);
+        check(b, c);
+        check(c, a);
+        if zeros.len() == 2 {
+            let z1 = zeros[0];
+            let z2 = zeros[1];
+            deep_segments.push([z1, z2]);
+        }
+    }
+
     MapGeometry {
         land: ugli::VertexBuffer::new_static(geng.ugli(), land),
         edge: ugli::VertexBuffer::new_static(geng.ugli(), edge),
         water: ugli::VertexBuffer::new_static(geng.ugli(), water),
         edge_segments,
         shore_segments,
+        deep_segments,
     }
 }
 
