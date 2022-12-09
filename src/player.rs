@@ -129,8 +129,14 @@ impl Game {
                     .unwrap_or(0.0)
                     .min(1.0);
                 fishing_rod_rot = Some(t);
-                let start_pos = pos.pos.extend(1.0);
-                bobber = Some(start_pos * (1.0 - t) + target_pos.extend(0.0) * t);
+                // Parabolic bobber throw
+                let delta = *target_pos - pos.pos;
+                let length = delta.len();
+                let direction = delta / length;
+                let height_parameter = 7.5;
+                let height = (1.0 - t) * (height_parameter * t + 1.0);
+                let pos = pos.pos + direction * t * length;
+                bobber = Some(pos.extend(height));
             }
             FishingState::Waiting(bobber_pos) => {
                 fishing_rod_rot = Some(0.5);
