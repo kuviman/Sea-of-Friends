@@ -51,7 +51,7 @@ impl Game {
             &draw_2d::Text::unit(
                 &**self.geng.default_font(),
                 format!("$ {}", self.money),
-                Rgba::BLACK,
+                Rgba::WHITE,
             )
             .translate(vec2(0.0, camera.fov / 2.0 - 1.0)),
         );
@@ -65,7 +65,7 @@ impl Game {
                     self.fishdex.len(),
                     self.assets.fishes.len(),
                 ),
-                Rgba::BLACK,
+                Rgba::WHITE,
             )
             .scale_uniform(0.5)
             .translate(vec2(10.0, camera.fov / 2.0 - 1.0)),

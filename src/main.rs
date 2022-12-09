@@ -198,7 +198,7 @@ impl geng::State for Game {
         self.framebuffer_size = framebuffer.size().map(|x| x as f32);
         ugli::clear(
             framebuffer,
-            Some(self.assets.config.sea_color),
+            Some(self.assets.config.space_color),
             Some(1.0),
             None,
         );
@@ -467,6 +467,7 @@ impl geng::State for Game {
                     }
                     geng::MouseButton::Middle => {
                         self.player.pos.pos = pos;
+                        println!("{}", pos)
                     }
                     _ => {}
                 }

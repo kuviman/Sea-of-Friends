@@ -1,6 +1,6 @@
 {
     "inventory_size": 10,
-    "sea_color": "#20BBC2",
+    "space_color": "#040404",
     "fish_shops": [
         {
             "x": -5,

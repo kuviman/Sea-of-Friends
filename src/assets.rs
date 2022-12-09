@@ -14,7 +14,7 @@ pub struct Shaders {
 #[asset(json)]
 pub struct Config {
     pub inventory_size: usize,
-    pub sea_color: Rgba<f32>,
+    pub space_color: Rgba<f32>,
     pub fish_shops: Vec<Vec2<f32>>,
     pub boat_types: Vec<BoatConfig>,
 }
