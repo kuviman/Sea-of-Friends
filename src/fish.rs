@@ -61,6 +61,45 @@ impl Model {
         return result.sub(fish.pos.vel) / 8.0 * delta_time;
     }
     pub fn currents(fish: &Fish, delta_time: f32) -> Vec2<f32> {
+        let height = Map::get_height(Map::get(), fish.pos.pos);
+        if height > -0.3 {
+            // TODO: use normals here
+            return Vec2{x: (height + 0.301) * 10.0, y: 0.0 };
+        }
+        let fish_config = &FishConfigs::get().configs[fish.index];
+        if let Some(spawn_circle) = &fish_config.spawn_circle {
+            let dist = spawn_circle.center.sub(fish.pos.pos);
+            // We're inside our spawn circle - follow behavior rules
+            if dist.len() < spawn_circle.radius {
+                match &spawn_circle.behavior {
+                    FishBehavior::Idle => {
+                        return Vec2::ZERO;
+                    },
+                    FishBehavior::Orbit => {
+                        if let Some(rev) = &spawn_circle.reversed {
+                            if *rev {
+                                return Vec2{x: -dist.y, y: dist.x} / spawn_circle.radius / 2.0;
+                            }
+                        }
+                        return Vec2{x: dist.y, y: -dist.x} / spawn_circle.radius / 2.0;
+                    },
+                    FishBehavior::Chaos => {
+                        let scaled_pos = fish.pos.pos / 5.0
+                        + Vec2 {
+                            x: fish.index as f32,
+                            y: (fish.index % 2) as f32,
+                        };
+                    return Vec2 {
+                        x: scaled_pos.x.cos() + scaled_pos.y.cos(),
+                        y: scaled_pos.x.sin() + scaled_pos.y.sin(),
+                    } * delta_time;
+                    }
+                }
+            }
+            // Outside our designated spawn area - head home
+            return dist / dist.len() * (dist.len() - spawn_circle.radius) * delta_time;
+        }
+        // No spawn circle specified - fallback to chaos
         let scaled_pos = fish.pos.pos / 5.0
             + Vec2 {
                 x: fish.index as f32,
@@ -123,7 +162,7 @@ impl Model {
                 if player.pos.vel.len() < 1.0 {
                     continue;
                 }
-                let scare_distance = 2.0;
+                let scare_distance = 4.0;
                 if (fish.pos.pos - player.pos.pos).len() < scare_distance {
                     fish.target_pos = player.pos.pos
                         + (fish.pos.pos - player.pos.pos).normalize_or_zero() * run_away_distance;
@@ -156,12 +195,13 @@ impl Model {
             // Attraction
             let mut attracted = false;
             for player in &mut self.players {
-                let bobber_attract_distance = 2.0;
+                let bobber_attract_distance = 2.2;
                 if let FishingState::Waiting(bobber_pos) = player.fishing_state {
                     if (bobber_pos - fish.pos.pos).len() < bobber_attract_distance {
                         attracted = true;
                         fish.target_pos = fish.pos.pos;
-                        fish.pos.rot = (bobber_pos - fish.pos.pos).arg();
+                        fish.pos.rot = normalize_angle((bobber_pos - fish.pos.pos).arg());
+                        fish.pos.w = 0.0;
                         if global_rng().gen_bool(0.005) {
                             fish.pos.pos = bobber_pos;
                             fish.target_pos = bobber_pos
@@ -186,10 +226,10 @@ impl Model {
                     &mut fish.pos,
                     target_pos,
                     MovementProps {
-                        max_speed: 0.5,
+                        max_speed: 2.0,
                         max_rotation_speed: 2.0,
                         angular_acceleration: 1.0,
-                        acceleration: 0.5,
+                        acceleration: 1.0,
                         water: true,
                     },
                     delta_time,
@@ -199,13 +239,13 @@ impl Model {
             if let Some(update) = updates.get(&fish.id) {
                 fish.pos.vel += update.vel;
             }
-            fish.pos.vel = fish.pos.vel.clamp_len(..=2.0);
+            fish.pos.vel = fish.pos.vel.clamp_len(..=1.7);
             let new_rot = fish.pos.vel.normalize().arg();
             fish.pos.w = normalize_angle(new_rot - fish.pos.rot).clamp_abs(fish.pos.vel.len());
             if fish.pos.vel.len() < 0.2 {
                 fish.pos.w = 0.0;
             }
-            fish.pos.rot += fish.pos.w;
+            fish.pos.rot = normalize_angle(fish.pos.rot + fish.pos.w);
             fish.pos.pos += fish.pos.vel * delta_time;
         }
     }

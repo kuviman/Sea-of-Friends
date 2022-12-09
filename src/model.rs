@@ -21,6 +21,27 @@ impl IdGen {
     }
 }
 
+pub struct FishConfigs {
+    pub configs: Vec<FishConfig>
+}
+static mut FISHCONFIG: Option<FishConfigs> = None;
+
+impl FishConfigs {
+    pub fn get() -> &'static FishConfigs {
+        unsafe { FISHCONFIG.get_or_insert_with(FishConfigs::load) }
+    }
+    pub fn load() -> Self {
+        Self {
+            configs:
+            serde_json::from_reader(
+                std::fs::File::open(static_path().join("assets").join("fish").join("list.json"))
+                .unwrap(),
+            ).unwrap()
+        }
+    }
+}
+
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Diff)]
 pub struct Model {
     #[diff = "clone"]
@@ -34,22 +55,26 @@ pub struct Model {
 impl Model {
     pub fn new() -> Self {
         let mut id_gen = IdGen::new();
-        let fish_types: Vec<FishConfig> = serde_json::from_reader(
-            std::fs::File::open(static_path().join("assets").join("fish").join("list.json"))
-                .unwrap(),
-        )
-        .unwrap();
         Self {
             players: Collection::new(),
             fishes: {
                 let mut fishes = Collection::new();
-                for _ in 0..100 {
-                    const D: f32 = 10.0;
-                    fishes.insert(Fish::new(
-                        id_gen.gen(),
-                        global_rng().gen_range(0..fish_types.len()),
-                        vec2(global_rng().gen_range(-D..D), global_rng().gen_range(-D..D)),
-                    ))
+                for i in 0..FishConfigs::get().configs.len() {
+                    let fish_config = &FishConfigs::get().configs[i];
+                    for j in 0..fish_config.count {
+
+                        let mut D: f32 = 10.0;
+                        let mut center = Vec2::ZERO;
+                        if let Some(spawn_circle) = &fish_config.spawn_circle {
+                            D = spawn_circle.radius;
+                            center = spawn_circle.center;
+                        }
+                        fishes.insert(Fish::new(
+                            id_gen.gen(),
+                            i,
+                            vec2(center.x + global_rng().gen_range(-D..D), center.y + global_rng().gen_range(-D..D)),
+                        ))
+                    }
                 }
                 fishes
             },

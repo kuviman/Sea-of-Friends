@@ -58,9 +58,26 @@ pub struct Assets {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub enum FishBehavior {
+    Orbit,
+    Chaos,
+    Idle
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SpawnCircle {
+    pub center: Vec2<f32>,
+    pub radius: f32,
+    pub behavior: FishBehavior,
+    pub reversed: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FishConfig {
     pub name: String,
     pub cost: u32,
+    pub spawn_circle: Option<SpawnCircle>,
+    pub count: u32,
 }
 
 pub struct FishAssets {
