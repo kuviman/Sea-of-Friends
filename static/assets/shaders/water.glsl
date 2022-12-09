@@ -13,9 +13,8 @@ uniform float u_time;
 
 const float beer_factor = 0.8;
 
-const float foam_distance = 0.01;
-const float foam_max_distance = 0.4;
-const float foam_min_distance = 0.04;
+const float foam_max_distance = 0.11;
+const float foam_min_distance = 0.09;
 const vec4 foam_color  = vec4(1.0);
 
 const vec2 surface_noise_tiling = vec2(1.0, 4.0);
@@ -24,7 +23,7 @@ const float surface_noise_cutoff = 0.9;// 0.777;
 const float surface_distortion_amount = 0.27;
 
 const vec4 _DepthGradientShallow = vec4(0.325, 0.807, 0.971, 0.725);
-const vec4 _DepthGradientDeep = vec4(0.086, 0.407, 1, 0.749);
+const vec4 _DepthGradientDeep = vec4(0.086, 0.207, 0.87, 0.889);
 const float _DepthMaxDistance = 1.0;
 const float _DepthFactor = 1.0;
 
@@ -45,6 +44,7 @@ vec4 alphaBlend(vec4 top, vec4 bottom)
 }
 
 varying vec3 v_v;
+varying vec2 v_uv;
 varying vec4 v_eye_pos;
 
 #ifdef VERTEX_SHADER
@@ -52,6 +52,7 @@ attribute vec2 a_uv;
 attribute vec3 a_v;
 void main() {
     v_v = a_v;
+	v_uv = a_uv;
 	viewNormal = (u_view_matrix * vec4(0.0, 0.0, 1.0, 0.0)).xyz;
     // (MODELVIEW_MATRIX * vec4(NORMAL, 0.0)).xyz;
 	vec2 uv = a_uv * 10.0;
@@ -65,6 +66,7 @@ void main() {
 #ifdef FRAGMENT_SHADER
 uniform vec2 u_framebuffer_size;
 uniform sampler2D u_depth_texture;
+uniform sampler2D u_heightmap;
 void main(){
 	// https://www.youtube.com/watch?v=Jq3he9Lbj7M
 	float depth = unpack4(texture2D(u_depth_texture, gl_FragCoord.xy / u_framebuffer_size));
@@ -95,13 +97,14 @@ void main(){
 	float surfaceNoiseAmount = smoothstep(surfaceNoiseCutoff - SMOOTHSTEP_AA, surfaceNoiseCutoff + SMOOTHSTEP_AA, surfaceNoiseSample);
 	
 	float waterDepth = clamp(depth / _DepthMaxDistance, 0.0, 1.0) * _DepthFactor;
-	vec4 waterColor = mix(_DepthGradientShallow, _DepthGradientDeep, waterDepth);
+	vec4 waterColor = mix(_DepthGradientShallow, _DepthGradientDeep, 1.0 - texture2D(u_heightmap, v_uv).x);
 
 	vec4 surfaceNoiseColor = foam_color;
     surfaceNoiseColor.a *= surfaceNoiseAmount;
 	vec4 color = alphaBlend(surfaceNoiseColor, waterColor);
 	
     gl_FragColor = color;
+
 	// ALBEDO = color.rgb;
 	// ALPHA = color.a;
 }

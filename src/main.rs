@@ -278,6 +278,7 @@ impl geng::State for Game {
             &self.map_geometry.water,
             (
                 ugli::uniforms! {
+                    u_heightmap: &self.assets.map,
                     surfaceNoise: &self.assets.surface_noise,
                     distortNoise: &self.assets.distort_noise,
                     u_depth_texture: &depth_texture,
@@ -301,6 +302,7 @@ impl geng::State for Game {
             (
                 ugli::uniforms! {
                     u_time: self.time,
+                    surfaceNoise: &self.assets.surface_noise,
                 },
                 geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
             ),
