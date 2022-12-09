@@ -51,6 +51,7 @@ impl Game {
                 FishingState::Casting(_) => Some(1.0),
                 FishingState::PreReeling { .. } => Some(1.0),
                 FishingState::Reeling { .. } => Some(1.0),
+                FishingState::Waiting(_) => Some(1.0),
                 _ => None,
             };
             if let Some(time) = time {
@@ -131,13 +132,36 @@ impl Game {
                 let start_pos = pos.pos.extend(1.0);
                 bobber = Some(start_pos * (1.0 - t) + target_pos.extend(0.0) * t);
             }
-            FishingState::Waiting(bobber_pos) | FishingState::PreReeling { bobber_pos, .. } => {
+            FishingState::Waiting(bobber_pos) => {
+                fishing_rod_rot = Some(0.5);
+                let t = self.player_timings.get(&player.id).copied().unwrap_or(0.0);
+                // Damped oscillation
+                let gamma = 1.0; // damping coefficient
+                let frequency = 1.5 * f32::PI;
+                // Shift to make it start at 0 depth
+                let t = (t - f32::PI / 2.0 / frequency).abs();
+                let amplitude = -(-gamma * t).exp() * 0.4;
+                let bobber_depth = amplitude * (frequency * t).cos();
+                bobber = Some(bobber_pos.extend(bobber_depth));
+            }
+            FishingState::PreReeling { bobber_pos, .. } => {
                 fishing_rod_rot = Some(0.5);
                 bobber = Some(bobber_pos.extend(0.0));
             }
-            FishingState::Reeling { fish, bobber_pos } => {
+            FishingState::Reeling { bobber_pos, .. } => {
                 fishing_rod_rot = Some(1.0);
-                bobber = Some(bobber_pos.extend(-1.0));
+                let t = self
+                    .player_timings
+                    .get(&player.id)
+                    .copied()
+                    .unwrap_or(0.0)
+                    .min(1.0);
+                // Damped oscillation
+                let gamma = 3.0; // damping coefficient
+                let frequency = 4.0 * f32::PI;
+                let amplitude = (-gamma * t).exp() * 0.2;
+                let bobber_depth = amplitude * (frequency * t).cos() - 0.2;
+                bobber = Some(bobber_pos.extend(bobber_depth));
             }
             FishingState::Attached(id) => {
                 if let Some(player) = self.model.get().players.get(&id) {

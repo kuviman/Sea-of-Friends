@@ -141,6 +141,7 @@ impl Game {
         // Fishing
         if let Some(time) = self.player_timings.get(&self.player_id) {
             if *time > 1.0 {
+                let mut ignore = false;
                 match self.player.fishing_state {
                     FishingState::Casting(bobber_pos) => {
                         if Map::get().get_height(bobber_pos) < 0.0 {
@@ -166,9 +167,14 @@ impl Game {
                     FishingState::Reeling { fish, bobber_pos } => {
                         self.player.fishing_state = FishingState::Waiting(bobber_pos);
                     }
+                    FishingState::Waiting(_) => {
+                        ignore = true;
+                    }
                     _ => {}
                 }
-                self.player_timings.remove(&self.player_id);
+                if !ignore {
+                    self.player_timings.remove(&self.player_id);
+                }
             }
         }
 
