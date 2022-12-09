@@ -181,8 +181,10 @@ impl Game {
         // Draw fishing rod
         if let Some(rot) = fishing_rod_rot {
             let texture = &self.assets.fishing_rod;
+            let mirrored = bobber.map(|bobber| bobber.x < pos.pos.x).unwrap_or(false);
             let fishing_rod_matrix = Mat4::translate(pos.pos.extend(0.5))
                 * Mat4::rotate_x(-self.camera.rot_v)
+                * Mat4::scale(vec3(if mirrored { -1.0 } else { 1.0 }, 1.0, 1.0))
                 * Mat4::rotate_y(rot)
                 * Mat4::translate(vec3(0.0, 0.0, 0.5))
                 * Mat4::scale(vec3(
