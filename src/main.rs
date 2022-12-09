@@ -47,6 +47,7 @@ pub struct Game {
     send_ping: bool,
     map_geometry: MapGeometry,
     inventory: Vec<FishType>,
+    hovered_inventory_slot: Option<usize>,
 }
 
 impl Game {
@@ -105,6 +106,7 @@ impl Game {
             send_ping: false,
             player_timings: HashMap::new(),
             inventory: Vec::new(),
+            hovered_inventory_slot: None,
         }
     }
 

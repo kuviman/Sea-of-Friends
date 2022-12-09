@@ -141,5 +141,9 @@ impl Game {
                 self.player_timings.remove(&self.player_id);
             }
         }
+
+        self.player.fish_in_hands = self
+            .hovered_inventory_slot
+            .and_then(|index| self.inventory.get(index).copied());
     }
 }

@@ -16,6 +16,7 @@ pub struct Player {
     pub id: Id,
     pub pos: Position,
     pub fishing_state: FishingState,
+    pub fish_in_hands: Option<FishType>,
 }
 
 impl Player {
@@ -29,6 +30,7 @@ impl Player {
                 w: 0.0,
             },
             fishing_state: FishingState::Idle,
+            fish_in_hands: None,
         }
     }
 }
@@ -191,6 +193,16 @@ impl Game {
                     &self.assets.bobber,
                 );
             }
+        }
+
+        if let Some(fish) = player.fish_in_hands {
+            self.draw_texture(
+                framebuffer,
+                pos.pos.extend(height.max(0.0) + 1.0),
+                0.25,
+                &self.assets.fishes[fish],
+                vec2(0.0, -1.0),
+            )
         }
     }
 }
