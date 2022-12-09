@@ -8,6 +8,8 @@ pub struct IdGen {
     next_id: u64,
 }
 
+pub type FishType = usize;
+
 impl IdGen {
     pub fn new() -> Self {
         Self { next_id: 0 }
@@ -61,6 +63,7 @@ pub enum Message {
     Ping,
     Update(Player),
     Catch(Id),
+    SpawnFish { index: usize, pos: Vec2<f32> },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -99,6 +102,9 @@ impl simple_net::Model for Model {
             }
             Message::Catch(id) => {
                 self.fishes.remove(&id);
+            }
+            Message::SpawnFish { index, pos } => {
+                self.fishes.insert(Fish::new(self.id_gen.gen(), index, pos));
             }
         }
         vec![]

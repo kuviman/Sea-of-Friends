@@ -1,3 +1,10 @@
 {
-    "sea_color": "#20BBC2"
+    "inventory_size": 10,
+    "sea_color": "#20BBC2",
+    "fish_shops": [
+        {
+            "x": -5,
+            "y": 0
+        }
+    ]
 }

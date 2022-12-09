@@ -5,24 +5,28 @@ pub mod assets;
 pub mod camera;
 pub mod fish;
 pub mod interpolation;
+pub mod inventory;
 pub mod land;
 pub mod local_player;
 pub mod model;
 pub mod movement;
 pub mod obj;
 pub mod player;
+pub mod shops;
 pub mod util;
 
 pub use assets::*;
 pub use camera::*;
 pub use fish::*;
 pub use interpolation::*;
+pub use inventory::*;
 pub use land::*;
 pub use local_player::*;
 pub use model::*;
 pub use movement::*;
 pub use obj::*;
 pub use player::*;
+pub use shops::*;
 pub use util::*;
 
 pub struct Game {
@@ -42,6 +46,7 @@ pub struct Game {
     ping_time: f32,
     send_ping: bool,
     map_geometry: MapGeometry,
+    inventory: Vec<FishType>,
 }
 
 impl Game {
@@ -99,6 +104,7 @@ impl Game {
             ping_time: 0.0,
             send_ping: false,
             player_timings: HashMap::new(),
+            inventory: Vec::new(),
         }
     }
 
@@ -154,6 +160,26 @@ impl Game {
         );
     }
 
+    pub fn draw_texture(
+        &self,
+        framebuffer: &mut ugli::Framebuffer,
+        pos: Vec3<f32>,
+        height: f32,
+        texture: &ugli::Texture,
+        origin: Vec2<f32>,
+    ) {
+        self.draw_quad(
+            framebuffer,
+            Mat4::translate(pos)
+                * Mat4::scale(
+                    vec3(texture.size().x as f32 / texture.size().y as f32, 1.0, 1.0) * height,
+                )
+                * Mat4::rotate_x(-self.camera.rot_v)
+                * Mat4::translate(vec3(-origin.x, 0.0, -origin.y)),
+            texture,
+        );
+    }
+
     pub fn world_pos(&self, mouse_pos: Vec2<f32>) -> Vec2<f32> {
         let camera_ray = self.camera.pixel_ray(self.framebuffer_size, mouse_pos);
         camera_ray.from.xy() - camera_ray.dir.xy() * camera_ray.from.z / camera_ray.dir.z
@@ -189,6 +215,7 @@ impl geng::State for Game {
         );
         self.draw_fishes(framebuffer);
         self.draw_players(framebuffer);
+        self.draw_shops(framebuffer);
 
         // TODO
         let mut depth_texture =
@@ -278,6 +305,8 @@ impl geng::State for Game {
                 ..default()
             },
         );
+
+        self.draw_inventory(framebuffer);
     }
 
     fn update(&mut self, delta_time: f64) {
@@ -346,6 +375,15 @@ impl geng::State for Game {
                         }
                         FishingState::Reeling { fish, .. } => {
                             self.model.send(Message::Catch(fish));
+                            if let Some(fish) = self.model.get().fishes.get(&fish) {
+                                self.inventory.push(fish.index);
+                                if self.inventory.len() > self.assets.config.inventory_size {
+                                    self.model.send(Message::SpawnFish {
+                                        index: self.inventory.remove(0),
+                                        pos: self.player.pos.pos,
+                                    });
+                                }
+                            }
                             self.player.fishing_state = FishingState::Idle;
                         }
                         _ => {

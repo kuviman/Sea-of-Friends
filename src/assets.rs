@@ -13,7 +13,14 @@ pub struct Shaders {
 #[derive(geng::Assets, Serialize, Deserialize)]
 #[asset(json)]
 pub struct Config {
+    pub inventory_size: usize,
     pub sea_color: Rgba<f32>,
+    pub fish_shops: Vec<Vec2<f32>>,
+}
+
+#[derive(geng::Assets)]
+pub struct ShopAssets {
+    pub fish: ugli::Texture,
 }
 
 #[derive(geng::Assets)]
@@ -35,6 +42,7 @@ pub struct Assets {
     pub map_color: ugli::Texture,
     #[asset(path = "music.mp3", postprocess = "make_looped")]
     pub music: geng::Sound,
+    pub shops: ShopAssets,
 }
 
 fn load_fishes(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Vec<ugli::Texture>> {
