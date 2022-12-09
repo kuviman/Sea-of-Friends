@@ -13,3 +13,7 @@ pub fn normalize_angle(mut a: f32) -> f32 {
 pub fn make_repeated(texture: &mut ugli::Texture) {
     texture.set_wrap_mode(ugli::WrapMode::Repeat);
 }
+
+pub fn make_looped(sound: &mut geng::Sound) {
+    sound.looped = true;
+}

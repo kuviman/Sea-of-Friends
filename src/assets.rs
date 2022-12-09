@@ -33,6 +33,8 @@ pub struct Assets {
     pub fishing_rod: ugli::Texture,
     pub map: ugli::Texture,
     pub map_color: ugli::Texture,
+    #[asset(path = "music.mp3", postprocess = "make_looped")]
+    pub music: geng::Sound,
 }
 
 fn load_fishes(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Vec<ugli::Texture>> {

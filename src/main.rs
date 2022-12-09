@@ -51,6 +51,7 @@ impl Game {
         player_id: Id,
         model: simple_net::Remote<Model>,
     ) -> Self {
+        assets.music.play();
         Self {
             player_id,
             model,
