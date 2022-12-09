@@ -34,7 +34,7 @@ pub struct Model {
 impl Model {
     pub fn new() -> Self {
         let mut id_gen = IdGen::new();
-        let fish_types: Vec<String> = serde_json::from_reader(
+        let fish_types: Vec<FishConfig> = serde_json::from_reader(
             std::fs::File::open(static_path().join("assets").join("fish").join("list.json"))
                 .unwrap(),
         )

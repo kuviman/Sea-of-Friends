@@ -387,7 +387,7 @@ impl geng::State for Game {
                                     .unwrap()
                                     .raw();
                                 if fishing_shop_distance < 2.0 {
-                                    self.money += 1;
+                                    self.money += self.assets.fishes[fish].config.cost;
                                 } else {
                                     self.model.send(Message::SpawnFish {
                                         index: fish,

@@ -221,7 +221,7 @@ impl Game {
         }
     }
     pub fn draw_fish(&self, framebuffer: &mut ugli::Framebuffer, fish: &Fish, pos: &Position) {
-        let texture = &self.assets.fishes[fish.index];
+        let texture = &self.assets.fishes[fish.index].texture;
         let matrix = Mat4::translate(
             // {
             //     let mut pos = pos.pos;

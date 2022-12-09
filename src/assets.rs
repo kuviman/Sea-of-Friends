@@ -36,7 +36,7 @@ pub struct Assets {
     #[asset(path = "WaterDistortion.png", postprocess = "make_repeated")]
     pub distort_noise: ugli::Texture,
     #[asset(load_with = "load_fishes(&geng, &base_path.join(\"fish\"))")]
-    pub fishes: Vec<ugli::Texture>,
+    pub fishes: Vec<FishAssets>,
     pub fishing_rod: ugli::Texture,
     pub map: ugli::Texture,
     pub map_color: ugli::Texture,
@@ -45,18 +45,37 @@ pub struct Assets {
     pub shops: ShopAssets,
 }
 
-fn load_fishes(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Vec<ugli::Texture>> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FishConfig {
+    pub name: String,
+    pub cost: u32,
+}
+
+pub struct FishAssets {
+    pub texture: ugli::Texture,
+    pub config: FishConfig,
+}
+
+fn load_fishes(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Vec<FishAssets>> {
     let geng = geng.clone();
     let path = path.to_owned();
     async move {
         let json = <String as geng::LoadAsset>::load(&geng, &path.join("list.json")).await?;
-        let list: Vec<String> = serde_json::from_str(&json)?;
-        future::join_all(list.into_iter().map(|name| {
-            <ugli::Texture as geng::LoadAsset>::load(&geng, &path.join(format!("{}.png", name)))
+        let list: Vec<FishConfig> = serde_json::from_str(&json)?;
+        let textures: Vec<ugli::Texture> = future::join_all(list.iter().map(|config| {
+            <ugli::Texture as geng::LoadAsset>::load(
+                &geng,
+                &path.join(format!("{}.png", config.name)),
+            )
         }))
         .await
         .into_iter()
-        .collect()
+        .collect::<Result<_, _>>()?;
+        Ok(textures
+            .into_iter()
+            .zip(list)
+            .map(|(texture, config)| FishAssets { texture, config })
+            .collect())
     }
     .boxed_local()
 }

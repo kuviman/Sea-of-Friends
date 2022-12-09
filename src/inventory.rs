@@ -15,7 +15,7 @@ impl Game {
                 (index as f32 / (self.inventory.len() - 1).max(1) as f32) * size - size / 2.0,
                 -camera.fov / 2.0,
             );
-            let texture = &self.assets.fishes[fish];
+            let texture = &self.assets.fishes[fish].texture;
             let fish_card = draw_2d::TexturedQuad::new(
                 AABB::point(Vec2::ZERO)
                     .extend_symmetric(vec2(texture.size().x as f32 / texture.size().y as f32, 1.0)),

@@ -1,7 +1,22 @@
 [
-    "blue",
-    "clown",
-    "gold",
-    "gray",
-    "green"
+    {
+        "name": "blue",
+        "cost": 1
+    },
+    {
+        "name": "clown",
+        "cost": 2
+    },
+    {
+        "name": "gold",
+        "cost": 3
+    },
+    {
+        "name": "gray",
+        "cost": 4
+    },
+    {
+        "name": "green",
+        "cost": 5
+    }
 ]

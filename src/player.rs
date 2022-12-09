@@ -200,7 +200,7 @@ impl Game {
                 framebuffer,
                 pos.pos.extend(height.max(0.0) + 1.0),
                 0.25,
-                &self.assets.fishes[fish],
+                &self.assets.fishes[fish].texture,
                 vec2(0.0, -1.0),
             )
         }
