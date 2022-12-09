@@ -49,6 +49,7 @@ pub struct Game {
     inventory: Vec<FishType>,
     hovered_inventory_slot: Option<usize>,
     money: u32,
+    fishdex: HashSet<FishType>,
 }
 
 impl Game {
@@ -109,6 +110,7 @@ impl Game {
             inventory: Vec::new(),
             hovered_inventory_slot: None,
             money: 0,
+            fishdex: HashSet::new(),
         }
     }
 
@@ -442,6 +444,7 @@ impl geng::State for Game {
                                 FishingState::Reeling { fish, .. } => {
                                     self.model.send(Message::Catch(fish));
                                     if let Some(fish) = self.model.get().fishes.get(&fish) {
+                                        self.fishdex.insert(fish.index);
                                         self.inventory.push(fish.index);
                                         if self.inventory.len() > self.assets.config.inventory_size
                                         {

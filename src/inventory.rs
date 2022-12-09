@@ -55,5 +55,20 @@ impl Game {
             )
             .translate(vec2(0.0, camera.fov / 2.0 - 1.0)),
         );
+        self.geng.draw_2d(
+            framebuffer,
+            &camera,
+            &draw_2d::Text::unit(
+                &**self.geng.default_font(),
+                format!(
+                    "fishdex: {}/{}",
+                    self.fishdex.len(),
+                    self.assets.fishes.len(),
+                ),
+                Rgba::BLACK,
+            )
+            .scale_uniform(0.5)
+            .translate(vec2(10.0, camera.fov / 2.0 - 1.0)),
+        );
     }
 }
