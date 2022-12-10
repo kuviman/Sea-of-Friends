@@ -30,6 +30,7 @@ pub struct BoatConfig {
 pub struct ShopAssets {
     pub fish: ugli::Texture,
     pub temp: ugli::Texture,
+    pub rowboat: ugli::Texture,
 }
 
 #[derive(geng::Assets)]
@@ -61,6 +62,17 @@ impl ShipAssets {
         }
     }
 }
+#[derive(geng::Assets)]
+pub struct PlayerAssets {
+    pub eyes: ugli::Texture,
+    pub hat: ugli::Texture,
+    pub pants: ugli::Texture,
+    pub shirt_holding: ugli::Texture,
+    pub shirt: ugli::Texture,
+    pub skin_fishing: ugli::Texture,
+    pub skin: ugli::Texture,
+    pub skin_holding: ugli::Texture,
+}
 
 #[derive(geng::Assets)]
 pub struct Assets {
@@ -72,7 +84,7 @@ pub struct Assets {
     )]
     pub ships: Vec<ShipAssets>,
     pub bobber: ugli::Texture,
-    pub player: ugli::Texture,
+    pub player: PlayerAssets,
     pub config: Config,
     #[asset(path = "PerlinNoise.png", postprocess = "make_repeated")]
     pub surface_noise: ugli::Texture,

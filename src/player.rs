@@ -11,6 +11,14 @@ pub enum FishingState {
     Attached(Id),
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PlayerColors {
+    pub hat: Rgba<f32>,
+    pub pants: Rgba<f32>,
+    pub shirt: Rgba<f32>,
+    pub skin: Rgba<f32>,
+}
+
 #[derive(HasId, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Player {
     pub id: Id,
@@ -18,10 +26,13 @@ pub struct Player {
     pub fishing_state: FishingState,
     pub fish_in_hands: Option<FishType>,
     pub boat_level: u8,
+    pub colors: PlayerColors,
 }
 
 impl Player {
     pub fn new(id: Id, pos: Vec2<f32>) -> Self {
+        let colors_saturation = 0.7;
+        let colors_value = 0.7;
         Self {
             id,
             pos: Position {
@@ -33,6 +44,12 @@ impl Player {
             fishing_state: FishingState::Idle,
             fish_in_hands: None,
             boat_level: 0,
+            colors: PlayerColors {
+                hat: Hsva::new(global_rng().gen(), colors_saturation, colors_value, 1.0).into(),
+                pants: Hsva::new(global_rng().gen(), colors_saturation, colors_value, 1.0).into(),
+                shirt: Hsva::new(global_rng().gen(), colors_saturation, colors_value, 1.0).into(),
+                skin: Rgba::WHITE,
+            },
         }
     }
 }
@@ -73,6 +90,42 @@ impl Game {
             self.draw_player(framebuffer, player, &pos);
         }
     }
+    fn draw_player_character(
+        &self,
+        framebuffer: &mut ugli::Framebuffer,
+        player: &Player,
+        pos: Vec3<f32>,
+    ) {
+        let matrix = Mat4::translate(pos)
+            * Mat4::rotate_x(-self.camera.rot_v)
+            * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
+            * Mat4::translate(vec3(0.0, 0.0, 1.0));
+        self.draw_quad(
+            framebuffer,
+            matrix,
+            &self.assets.player.skin,
+            player.colors.skin,
+        );
+        self.draw_quad(framebuffer, matrix, &self.assets.player.eyes, Rgba::WHITE);
+        self.draw_quad(
+            framebuffer,
+            matrix,
+            &self.assets.player.hat,
+            player.colors.hat,
+        );
+        self.draw_quad(
+            framebuffer,
+            matrix,
+            &self.assets.player.pants,
+            player.colors.pants,
+        );
+        self.draw_quad(
+            framebuffer,
+            matrix,
+            &self.assets.player.shirt,
+            player.colors.shirt,
+        );
+    }
     fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player, pos: &Position) {
         let height = Map::get().get_height(pos.pos);
         if height < SHORE_HEIGHT {
@@ -102,23 +155,13 @@ impl Game {
                     },
                 );
             }
-            self.draw_quad(
+            self.draw_player_character(
                 framebuffer,
-                Mat4::translate((model_matrix * ship.seats[0].extend(1.0)).xyz())
-                    * Mat4::rotate_x(-self.camera.rot_v)
-                    * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
-                    * Mat4::translate(vec3(0.0, 0.0, 1.0)),
-                &self.assets.player,
+                player,
+                (model_matrix * ship.seats[0].extend(1.0)).xyz(),
             );
         } else {
-            self.draw_quad(
-                framebuffer,
-                Mat4::translate(pos.pos.extend(height))
-                    * Mat4::rotate_x(-self.camera.rot_v)
-                    * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
-                    * Mat4::translate(vec3(0.0, 0.0, 1.0)),
-                &self.assets.player,
-            );
+            self.draw_player_character(framebuffer, player, pos.pos.extend(height));
         }
         let mut fishing_rod_rot = None;
         let mut bobber = None;
@@ -211,7 +254,7 @@ impl Game {
                     1.0,
                     1.0,
                 ));
-            self.draw_quad(framebuffer, fishing_rod_matrix, texture);
+            self.draw_quad(framebuffer, fishing_rod_matrix, texture, Rgba::WHITE);
 
             // Bobber
             if let Some(bobber_pos) = bobber {
@@ -254,6 +297,7 @@ impl Game {
                         * Mat4::scale_uniform(0.1)
                         * Mat4::rotate_x(-self.camera.rot_v),
                     &self.assets.bobber,
+                    Rgba::WHITE,
                 );
             }
         }

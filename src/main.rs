@@ -120,6 +120,7 @@ impl Game {
         framebuffer: &mut ugli::Framebuffer,
         matrix: Mat4<f32>,
         texture: &ugli::Texture,
+        color: Rgba<f32>,
     ) {
         ugli::draw(
             framebuffer,
@@ -129,14 +130,14 @@ impl Game {
             (
                 ugli::uniforms! {
                     u_model_matrix: matrix,
-                    u_color: Rgba::WHITE,
+                    u_color: color,
                     u_texture: texture,
                 },
                 geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
             ),
             ugli::DrawParameters {
                 blend_mode: Some(ugli::BlendMode::default()),
-                depth_func: Some(ugli::DepthFunc::Less),
+                depth_func: Some(ugli::DepthFunc::LessOrEqual),
                 ..default()
             },
         );
@@ -185,6 +186,7 @@ impl Game {
                 * Mat4::rotate_x(-self.camera.rot_v)
                 * Mat4::translate(vec3(-origin.x, 0.0, -origin.y)),
             texture,
+            Rgba::WHITE,
         );
     }
 
