@@ -29,6 +29,7 @@ pub struct BoatConfig {
 #[derive(geng::Assets)]
 pub struct ShopAssets {
     pub fish: ugli::Texture,
+    pub temp: ugli::Texture,
 }
 
 #[derive(geng::Assets)]
@@ -61,7 +62,7 @@ pub struct Assets {
 pub enum FishBehavior {
     Orbit,
     Chaos,
-    Idle
+    Idle,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

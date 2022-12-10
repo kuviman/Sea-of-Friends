@@ -127,9 +127,16 @@ impl Game {
                 self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
             }
         }
-        for &pos in &self.assets.config.fish_shops {
+        for &pos in itertools::chain![
+            &self.assets.config.fish_shops,
+            self.assets
+                .config
+                .boat_types
+                .iter()
+                .flat_map(|boat_type| &boat_type.shops)
+        ] {
             let delta_pos = self.player.pos.pos - pos;
-            const SHOP_R: f32 = 1.0;
+            const SHOP_R: f32 = 1.2;
             if delta_pos.len() < SHOP_R {
                 let n = delta_pos.normalize_or_zero();
                 let penetration = SHOP_R - delta_pos.len();
