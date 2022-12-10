@@ -30,6 +30,12 @@ pub struct PlayerColors {
     pub skin: Rgba<f32>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Seated {
+    pub player: Id,
+    pub seat: usize,
+}
+
 #[derive(HasId, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Player {
     pub id: Id,
@@ -38,6 +44,7 @@ pub struct Player {
     pub fish_in_hands: Option<FishType>,
     pub boat_level: u8,
     pub colors: PlayerColors,
+    pub seated: Option<Seated>,
 }
 
 impl Player {
@@ -64,6 +71,7 @@ impl Player {
                     skin: Rgba::WHITE,
                 }
             },
+            seated: None,
         }
     }
 }
@@ -313,6 +321,27 @@ impl Game {
         }
     }
     fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player, pos: &Position) {
+        if let Some(seated) = player.seated {
+            if let Some(captain) = self.model.get().players.get(&seated.player) {
+                let boat_type_index = captain.boat_level.max(1) as usize - 1;
+                let ship = &self.assets.ships[boat_type_index];
+                let pos = if captain.id == self.player_id {
+                    self.player.pos.clone()
+                } else {
+                    let Some(pos) = self.interpolated.get(&captain.id) else { return };
+                    pos.get()
+                };
+                let model_matrix = Mat4::translate(pos.pos.extend(0.0))
+                    * Mat4::rotate_z(pos.rot)
+                    * Mat4::scale_uniform(self.assets.config.boat_types[boat_type_index].scale);
+                self.draw_player_character(
+                    framebuffer,
+                    player,
+                    (model_matrix * ship.seats[seated.seat].extend(1.0)).xyz(),
+                );
+            }
+            return;
+        }
         let height = Map::get().get_height(pos.pos);
         if height < SHORE_HEIGHT {
             let boat_type_index = player.boat_level.max(1) as usize - 1;

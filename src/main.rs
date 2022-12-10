@@ -327,7 +327,6 @@ impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
         let delta_time = delta_time as f32;
 
-        self.camera.pos = self.player.pos.pos.extend(0.0);
         self.geng
             .audio()
             .set_listener_position(self.player.pos.pos.extend(0.0).map(|x| x as f64));
@@ -489,9 +488,49 @@ impl geng::State for Game {
                     }
                     geng::MouseButton::Right => {
                         let mut teleport = None;
-                        if (pos - self.player.pos.pos).len() < 2.0 && self.player.boat_level > 0 {
+                        if (pos - self.player.pos.pos).len() < 3.0 {
                             let land = |pos| Map::get().get_height(pos) > SHORE_HEIGHT;
-                            if land(pos) != land(self.player.pos.pos) {
+                            let mut seated = false;
+                            if self.player.seated.is_none() && land(self.player.pos.pos) {
+                                for other_player in &self.model.get().players {
+                                    if other_player.id == self.player_id {
+                                        continue;
+                                    }
+                                    let Some(p) = self.interpolated.get(&other_player.id) else { continue };
+                                    if land(p.get().pos) {
+                                        continue;
+                                    }
+                                    if (p.get().pos - pos).len() < 1.0 {
+                                        seated = true;
+                                        let mut seats: HashSet<usize> = (1..self.assets.ships
+                                            [other_player.boat_level.max(1) as usize - 1]
+                                            .seats
+                                            .len())
+                                            .collect();
+                                        for p in &self.model.get().players {
+                                            if let Some(seated) = p.seated {
+                                                if seated.player == other_player.id {
+                                                    seats.remove(&seated.seat);
+                                                }
+                                            }
+                                        }
+                                        if let Some(seat) = seats.into_iter().next() {
+                                            self.player.seated = Some(Seated {
+                                                player: other_player.id,
+                                                seat,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            if self.player.seated.is_some() && land(pos) {
+                                self.player.seated = None;
+                                teleport = Some(pos);
+                            }
+                            if !seated
+                                && self.player.boat_level > 0
+                                && land(pos) != land(self.player.pos.pos)
+                            {
                                 teleport = Some(pos);
                             }
                         }
