@@ -100,12 +100,20 @@ impl Game {
         character_pos: Vec3<f32>,
     ) {
         // TODO: Add crabs
-        let matrix = Mat4::translate(character_pos)
+        let mut matrix = Mat4::translate(character_pos)
             * Mat4::rotate_z(
                 (self.camera.eye_pos().xy() - character_pos.xy()).arg() + f32::PI / 2.0,
             );
-        let body_matrix =
-            matrix * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25) * Mat4::translate(vec3(0.0, 0.0, 1.0));
+        let rot = if Map::get().get_height(character_pos.xy()) > SHORE_HEIGHT {
+            (self.time * 10.0).sin() * player.pos.vel.len().min(1.0) * 0.1
+        } else {
+            0.0
+        };
+        let body_matrix = matrix
+            * Mat4::translate(vec3(0.0, 0.0, rot.abs()))
+            * Mat4::rotate_y(rot)
+            * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
+            * Mat4::translate(vec3(0.0, 0.0, 1.0));
         let (skin, shirt) = if player.fish_in_hands.is_some() {
             (
                 &self.assets.player.skin_holding,
