@@ -31,8 +31,6 @@ pub struct Player {
 
 impl Player {
     pub fn new(id: Id, pos: Vec2<f32>) -> Self {
-        let colors_saturation = 0.7;
-        let colors_value = 0.7;
         Self {
             id,
             pos: Position {
@@ -44,11 +42,16 @@ impl Player {
             fishing_state: FishingState::Idle,
             fish_in_hands: None,
             boat_level: 0,
-            colors: PlayerColors {
-                hat: Hsva::new(global_rng().gen(), colors_saturation, colors_value, 1.0).into(),
-                pants: Hsva::new(global_rng().gen(), colors_saturation, colors_value, 1.0).into(),
-                shirt: Hsva::new(global_rng().gen(), colors_saturation, colors_value, 1.0).into(),
-                skin: Rgba::WHITE,
+            colors: {
+                let saturation = 0.7;
+                let value = 0.7;
+                let top = Hsva::new(global_rng().gen(), saturation, value, 1.0).into();
+                PlayerColors {
+                    hat: top,
+                    pants: Hsva::new(global_rng().gen(), saturation, value, 1.0).into(),
+                    shirt: top,
+                    skin: Rgba::WHITE,
+                }
             },
         }
     }
@@ -94,25 +97,22 @@ impl Game {
         &self,
         framebuffer: &mut ugli::Framebuffer,
         player: &Player,
-        pos: Vec3<f32>,
+        character_pos: Vec3<f32>,
     ) {
-        let matrix = Mat4::translate(pos)
+        let matrix = Mat4::translate(character_pos)
             * Mat4::rotate_x(-self.camera.rot_v)
             * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
             * Mat4::translate(vec3(0.0, 0.0, 1.0));
-        self.draw_quad(
-            framebuffer,
-            matrix,
-            &self.assets.player.skin,
-            player.colors.skin,
-        );
-        self.draw_quad(framebuffer, matrix, &self.assets.player.eyes, Rgba::WHITE);
-        self.draw_quad(
-            framebuffer,
-            matrix,
-            &self.assets.player.hat,
-            player.colors.hat,
-        );
+        let (skin, shirt) = if player.fish_in_hands.is_some() {
+            (
+                &self.assets.player.skin_holding,
+                &self.assets.player.shirt_holding,
+            )
+        } else if player.fishing_state != FishingState::Idle {
+            (&self.assets.player.skin_fishing, &self.assets.player.shirt)
+        } else {
+            (&self.assets.player.skin, &self.assets.player.shirt)
+        };
         self.draw_quad(
             framebuffer,
             matrix,
@@ -122,53 +122,19 @@ impl Game {
         self.draw_quad(
             framebuffer,
             matrix,
-            &self.assets.player.shirt,
-            player.colors.shirt,
+            &self.assets.player.hat,
+            player.colors.hat,
         );
-    }
-    fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player, pos: &Position) {
-        let height = Map::get().get_height(pos.pos);
-        if height < SHORE_HEIGHT {
-            let boat_type_index = player.boat_level.max(1) as usize - 1;
-            let model_matrix = Mat4::translate(pos.pos.extend(0.0))
-                * Mat4::rotate_z(pos.rot)
-                * Mat4::scale_uniform(self.assets.config.boat_types[boat_type_index].scale);
-            let ship = &self.assets.ships[boat_type_index];
-            let obj = &ship.obj;
-            for mesh in &obj.meshes {
-                ugli::draw(
-                    framebuffer,
-                    &self.assets.shaders.obj,
-                    ugli::DrawMode::Triangles,
-                    &mesh.geometry,
-                    (
-                        ugli::uniforms! {
-                            u_color: mesh.material.diffuse_color,
-                            u_model_matrix: model_matrix,
-                            u_texture: mesh.material.texture.as_deref().unwrap_or(&self.white_texture),
-                        },
-                        geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
-                    ),
-                    ugli::DrawParameters {
-                        depth_func: Some(ugli::DepthFunc::Less),
-                        ..default()
-                    },
-                );
-            }
-            self.draw_player_character(
-                framebuffer,
-                player,
-                (model_matrix * ship.seats[0].extend(1.0)).xyz(),
-            );
-        } else {
-            self.draw_player_character(framebuffer, player, pos.pos.extend(height));
-        }
+        self.draw_quad(framebuffer, matrix, shirt, player.colors.shirt);
+        self.draw_quad(framebuffer, matrix, skin, player.colors.skin);
+        self.draw_quad(framebuffer, matrix, &self.assets.player.eyes, Rgba::WHITE);
+
         let mut fishing_rod_rot = None;
         let mut bobber = None;
         match &player.fishing_state {
             FishingState::Idle => {}
             FishingState::Spinning => {
-                fishing_rod_rot = Some(self.time * 5.0);
+                fishing_rod_rot = Some(-0.2);
             }
             FishingState::Casting(target_pos) => {
                 let t = self
@@ -180,12 +146,12 @@ impl Game {
                 fishing_rod_rot = Some(t);
 
                 // Parabolic bobber throw
-                let delta = *target_pos - pos.pos;
+                let delta = *target_pos - character_pos.xy();
                 let length = delta.len();
                 let direction = delta / length;
                 let height_parameter = 7.5;
                 let height = (1.0 - t) * (height_parameter * t + 1.0);
-                let pos = pos.pos + direction * t * length;
+                let pos = character_pos.xy() + direction * t * length;
                 bobber = Some(pos.extend(height));
             }
             FishingState::Waiting(bobber_pos) => {
@@ -243,8 +209,10 @@ impl Game {
         // Draw fishing rod
         if let Some(rot) = fishing_rod_rot {
             let texture = &self.assets.fishing_rod;
-            let mirrored = bobber.map(|bobber| bobber.x < pos.pos.x).unwrap_or(false);
-            let fishing_rod_matrix = Mat4::translate(pos.pos.extend(0.5))
+            let mirrored = bobber
+                .map(|bobber| bobber.x < character_pos.x)
+                .unwrap_or(false);
+            let fishing_rod_matrix = Mat4::translate(character_pos + vec3(0.0, 0.0, 0.5))
                 * Mat4::rotate_x(-self.camera.rot_v)
                 * Mat4::scale(vec3(if mirrored { -1.0 } else { 1.0 }, 1.0, 1.0))
                 * Mat4::rotate_y(rot)
@@ -305,11 +273,49 @@ impl Game {
         if let Some(fish) = player.fish_in_hands {
             self.draw_texture(
                 framebuffer,
-                pos.pos.extend(height.max(0.0) + 1.0),
+                character_pos + vec3(0.0, 0.0, 1.0),
                 0.25,
                 &self.assets.fishes[fish].texture,
                 vec2(0.0, -1.0),
             )
+        }
+    }
+    fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player, pos: &Position) {
+        let height = Map::get().get_height(pos.pos);
+        if height < SHORE_HEIGHT {
+            let boat_type_index = player.boat_level.max(1) as usize - 1;
+            let model_matrix = Mat4::translate(pos.pos.extend(0.0))
+                * Mat4::rotate_z(pos.rot)
+                * Mat4::scale_uniform(self.assets.config.boat_types[boat_type_index].scale);
+            let ship = &self.assets.ships[boat_type_index];
+            let obj = &ship.obj;
+            for mesh in &obj.meshes {
+                ugli::draw(
+                    framebuffer,
+                    &self.assets.shaders.obj,
+                    ugli::DrawMode::Triangles,
+                    &mesh.geometry,
+                    (
+                        ugli::uniforms! {
+                            u_color: mesh.material.diffuse_color,
+                            u_model_matrix: model_matrix,
+                            u_texture: mesh.material.texture.as_deref().unwrap_or(&self.white_texture),
+                        },
+                        geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
+                    ),
+                    ugli::DrawParameters {
+                        depth_func: Some(ugli::DepthFunc::Less),
+                        ..default()
+                    },
+                );
+            }
+            self.draw_player_character(
+                framebuffer,
+                player,
+                (model_matrix * ship.seats[0].extend(1.0)).xyz(),
+            );
+        } else {
+            self.draw_player_character(framebuffer, player, pos.pos.extend(height));
         }
     }
 }
