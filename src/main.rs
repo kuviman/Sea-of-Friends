@@ -496,6 +496,9 @@ impl geng::State for Game {
                                     if other_player.id == self.player_id {
                                         continue;
                                     }
+                                    if other_player.seated.is_some() {
+                                        continue;
+                                    }
                                     let Some(p) = self.interpolated.get(&other_player.id) else { continue };
                                     if land(p.get().pos) {
                                         continue;

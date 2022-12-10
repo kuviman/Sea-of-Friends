@@ -202,7 +202,11 @@ impl Game {
                         } else {
                             self.player.fishing_state = FishingState::Idle;
                         }
+                        // TODO: make more comments
                         for other_player in &self.model.get().players {
+                            if other_player.seated.is_some() {
+                                continue;
+                            }
                             let Some(p) = self.interpolated.get(&other_player.id) else { continue };
                             if (p.get().pos - bobber_pos).len() < player_radius {
                                 if other_player.id == self.player_id {
