@@ -99,7 +99,8 @@ impl Game {
                 self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
             }
         }
-        if self.player.boat_level < 1 {
+        // if self.player.boat_level < 1 {
+        {
             let to_shore = vec_to(&self.map_geometry.shore_segments, self.player.pos.pos);
             let player_radius = if Map::get().get_height(self.player.pos.pos) < 0.0 {
                 player_radius

@@ -80,11 +80,7 @@ impl Game {
             let model_matrix = Mat4::translate(pos.pos.extend(0.0))
                 * Mat4::rotate_z(pos.rot)
                 * Mat4::scale_uniform(self.assets.config.boat_types[boat_type_index].scale);
-            let obj = &[
-                &self.assets.rowboat,
-                &self.assets.bigboat,
-                &self.assets.airboat,
-            ][boat_type_index];
+            let obj = &self.assets.ships[boat_type_index].obj;
             for mesh in &obj.meshes {
                 ugli::draw(
                     framebuffer,

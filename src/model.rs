@@ -61,8 +61,7 @@ impl Model {
                 let mut fishes = Collection::new();
                 for i in 0..FishConfigs::get().configs.len() {
                     let fish_config = &FishConfigs::get().configs[i];
-                    for j in 0..fish_config.count {
-
+                    for j in 0..fish_config.count { 
                         let mut D: f32 = 10.0;
                         let mut center = Vec2::ZERO;
                         if let Some(spawn_circle) = &fish_config.spawn_circle {

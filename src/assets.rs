@@ -33,14 +33,16 @@ pub struct ShopAssets {
 }
 
 #[derive(geng::Assets)]
+pub struct ShipAssets {
+    #[asset(path = "model.obj")]
+    pub obj: Obj,
+}
+
+#[derive(geng::Assets)]
 pub struct Assets {
     pub shaders: Shaders,
-    #[asset(path = "1391 Rowboat.obj")]
-    pub rowboat: Obj,
-    #[asset(path = "boat2.obj")]
-    pub bigboat: Obj,
-    #[asset(path = "CUPIC_AIRSHIP.obj")]
-    pub airboat: Obj,
+    #[asset(range = "1..=3", path = "ships/*")]
+    pub ships: Vec<ShipAssets>,
     pub bobber: ugli::Texture,
     pub player: ugli::Texture,
     pub config: Config,

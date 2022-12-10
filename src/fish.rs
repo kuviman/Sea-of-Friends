@@ -36,7 +36,7 @@ impl Model {
         for fish in nearby_fish {
             result += fish.pos.pos;
         }
-        if nearby_fish.len() > 0 {
+        if !nearby_fish.is_empty() {
             result /= nearby_fish.len() as f32;
         }
         return result.sub(fish.pos.pos) / 20.0 * delta_time;
@@ -64,7 +64,10 @@ impl Model {
         let height = Map::get_height(Map::get(), fish.pos.pos);
         if height > -0.3 {
             // TODO: use normals here
-            return Vec2{x: (height + 0.301) * 10.0, y: 0.0 };
+            return Vec2 {
+                x: (height + 0.301) * 10.0,
+                y: 0.0,
+            };
         }
         let fish_config = &FishConfigs::get().configs[fish.index];
         if let Some(spawn_circle) = &fish_config.spawn_circle {
@@ -74,25 +77,33 @@ impl Model {
                 match &spawn_circle.behavior {
                     FishBehavior::Idle => {
                         return Vec2::ZERO;
-                    },
+                    }
                     FishBehavior::Orbit => {
                         if let Some(rev) = &spawn_circle.reversed {
                             if *rev {
-                                return Vec2{x: -dist.y, y: dist.x} / spawn_circle.radius / 2.0;
+                                return Vec2 {
+                                    x: -dist.y,
+                                    y: dist.x,
+                                } / spawn_circle.radius
+                                    / 2.0;
                             }
                         }
-                        return Vec2{x: dist.y, y: -dist.x} / spawn_circle.radius / 2.0;
-                    },
+                        return Vec2 {
+                            x: dist.y,
+                            y: -dist.x,
+                        } / spawn_circle.radius
+                            / 2.0;
+                    }
                     FishBehavior::Chaos => {
                         let scaled_pos = fish.pos.pos / 5.0
-                        + Vec2 {
-                            x: fish.index as f32,
-                            y: (fish.index % 2) as f32,
-                        };
-                    return Vec2 {
-                        x: scaled_pos.x.cos() + scaled_pos.y.cos(),
-                        y: scaled_pos.x.sin() + scaled_pos.y.sin(),
-                    } * delta_time;
+                            + Vec2 {
+                                x: fish.index as f32,
+                                y: (fish.index % 2) as f32,
+                            };
+                        return Vec2 {
+                            x: scaled_pos.x.cos() + scaled_pos.y.cos(),
+                            y: scaled_pos.x.sin() + scaled_pos.y.sin(),
+                        } * delta_time;
                     }
                 }
             }
