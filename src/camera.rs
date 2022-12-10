@@ -12,6 +12,11 @@ pub struct Camera {
 impl Camera {
     pub const MIN_ROT_V: f32 = -f32::PI / 2.0;
     pub const MAX_ROT_V: f32 = f32::PI / 2.0;
+
+    pub fn eye_pos(&self) -> Vec3<f32> {
+        let v = vec2(self.distance, 0.0).rotate(self.rot_v);
+        self.pos + vec3(0.0, -v.y, v.x)
+    }
 }
 
 impl geng::AbstractCamera3d for Camera {

@@ -99,10 +99,13 @@ impl Game {
         player: &Player,
         character_pos: Vec3<f32>,
     ) {
+        // TODO: Add crabs
         let matrix = Mat4::translate(character_pos)
-            * Mat4::rotate_x(-self.camera.rot_v)
-            * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
-            * Mat4::translate(vec3(0.0, 0.0, 1.0));
+            * Mat4::rotate_z(
+                (self.camera.eye_pos().xy() - character_pos.xy()).arg() + f32::PI / 2.0,
+            );
+        let body_matrix =
+            matrix * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25) * Mat4::translate(vec3(0.0, 0.0, 1.0));
         let (skin, shirt) = if player.fish_in_hands.is_some() {
             (
                 &self.assets.player.skin_holding,
@@ -115,19 +118,24 @@ impl Game {
         };
         self.draw_quad(
             framebuffer,
-            matrix,
+            body_matrix,
             &self.assets.player.pants,
             player.colors.pants,
         );
         self.draw_quad(
             framebuffer,
-            matrix,
+            body_matrix,
             &self.assets.player.hat,
             player.colors.hat,
         );
-        self.draw_quad(framebuffer, matrix, shirt, player.colors.shirt);
-        self.draw_quad(framebuffer, matrix, skin, player.colors.skin);
-        self.draw_quad(framebuffer, matrix, &self.assets.player.eyes, Rgba::WHITE);
+        self.draw_quad(framebuffer, body_matrix, shirt, player.colors.shirt);
+        self.draw_quad(framebuffer, body_matrix, skin, player.colors.skin);
+        self.draw_quad(
+            framebuffer,
+            body_matrix,
+            &self.assets.player.eyes,
+            Rgba::WHITE,
+        );
 
         let mut fishing_rod_rot = None;
         let mut bobber = None;
@@ -212,16 +220,16 @@ impl Game {
             let mirrored = bobber
                 .map(|bobber| bobber.x < character_pos.x)
                 .unwrap_or(false);
-            let fishing_rod_matrix = Mat4::translate(character_pos + vec3(0.0, 0.0, 0.5))
-                * Mat4::rotate_x(-self.camera.rot_v)
+            let fishing_rod_matrix = matrix
+                * Mat4::translate(vec3(0.0, -0.1, 0.4))
                 * Mat4::scale(vec3(if mirrored { -1.0 } else { 1.0 }, 1.0, 1.0))
                 * Mat4::rotate_y(rot)
-                * Mat4::translate(vec3(0.0, 0.0, 0.5))
                 * Mat4::scale(vec3(
                     texture.size().x as f32 / texture.size().y as f32,
                     1.0,
                     1.0,
-                ));
+                ))
+                * Mat4::translate(-vec3(0.3, 0.5, 0.11).map(|x| x * 2.0 - 1.0));
             self.draw_quad(framebuffer, fishing_rod_matrix, texture, Rgba::WHITE);
 
             // Bobber
@@ -259,12 +267,19 @@ impl Game {
                         ..default()
                     },
                 );
+                let texture = &self.assets.bobber;
                 self.draw_quad(
                     framebuffer,
                     Mat4::translate(bobber_pos)
                         * Mat4::scale_uniform(0.1)
-                        * Mat4::rotate_x(-self.camera.rot_v),
-                    &self.assets.bobber,
+                        * Mat4::rotate_x(-self.camera.rot_v)
+                        * Mat4::scale(vec3(
+                            texture.size().x as f32 / texture.size().y as f32,
+                            1.0,
+                            1.0,
+                        ))
+                        * Mat4::translate(vec3(0.0, 0.0, 0.5)),
+                    texture,
                     Rgba::WHITE,
                 );
             }

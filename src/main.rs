@@ -69,11 +69,11 @@ impl Game {
             geng: geng.clone(),
             assets: assets.clone(),
             camera: Camera {
-                fov: f32::PI / 3.0,
+                fov: 40.0 * f32::PI / 180.0,
                 pos: Vec3::ZERO,
-                distance: 10.0,
+                distance: 20.0,
                 rot_h: 0.0,
-                rot_v: f32::PI / 4.0,
+                rot_v: 60.0 * f32::PI / 180.0,
             },
             white_texture: ugli::Texture::new_with(geng.ugli(), vec2(1, 1), |_| Rgba::WHITE),
             player: Player::new(player_id, Vec2::ZERO),
@@ -183,7 +183,8 @@ impl Game {
                 * Mat4::scale(
                     vec3(texture.size().x as f32 / texture.size().y as f32, 1.0, 1.0) * height,
                 )
-                * Mat4::rotate_x(-self.camera.rot_v)
+                // * Mat4::rotate_z((self.camera.eye_pos().xy() - pos.xy()).arg() + f32::PI / 2.0)
+                // * Mat4::rotate_x(-self.camera.rot_v)
                 * Mat4::translate(vec3(-origin.x, 0.0, -origin.y)),
             texture,
             Rgba::WHITE,
