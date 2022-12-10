@@ -8,6 +8,7 @@ pub struct Position {
     pub w: f32,
 }
 
+#[derive(Clone)]
 pub struct MovementProps {
     pub max_speed: f32,
     pub max_rotation_speed: f32,

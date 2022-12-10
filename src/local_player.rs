@@ -1,5 +1,7 @@
 use super::*;
 
+pub const MAX_LINE_LEN: f32 = 7.0;
+
 pub enum PlayerMovementControl {
     GoTo(Vec2<f32>),
     GoDirection(Vec2<f32>),
@@ -55,10 +57,37 @@ impl Game {
             PlayerMovementControl::GoTo(pos) => pos,
             PlayerMovementControl::GoDirection(dir) => self.player.pos.pos + dir * props.max_speed,
         };
-        update_movement(&mut self.player.pos, target_pos, props, delta_time);
+
+        let player_radius = 1.0;
+        update_movement(&mut self.player.pos, target_pos, props.clone(), delta_time);
+        if let FishingState::Attached(id) = self.player.fishing_state {
+            if let Some(other_player) = self.model.get().players.get(&id) {
+                if let Some(p) = self.interpolated.get(&id) {
+                    let delta_pos = self.player.pos.pos - p.get().pos;
+                    const MIN_LINE_LEN: f32 = 4.0;
+                    if delta_pos.len() > MIN_LINE_LEN {
+                        update_movement(
+                            &mut self.player.pos,
+                            p.get().pos,
+                            MovementProps {
+                                acceleration: props.acceleration * 2.0,
+                                ..props
+                            },
+                            delta_time,
+                        );
+                    }
+                    if delta_pos.len() > MAX_LINE_LEN {
+                        self.player.fishing_state = FishingState::Idle;
+                        self.play_sound_for_everyone(self.player.pos.pos, SoundType::StopFishing);
+                    }
+                }
+            } else {
+                self.player.fishing_state = FishingState::Idle;
+                self.play_sound_for_everyone(self.player.pos.pos, SoundType::StopFishing);
+            }
+        }
 
         // handle collisions
-        let player_radius = 1.0;
         if Map::get().get_height(self.player.pos.pos) < SHORE_HEIGHT {
             for other_player in &self.model.get().players {
                 if other_player.id == self.player_id {
@@ -74,19 +103,9 @@ impl Game {
                 }
             }
         }
-        if let FishingState::Attached(id) = self.player.fishing_state {
-            if let Some(other_player) = self.model.get().players.get(&id) {
-                if let Some(p) = self.interpolated.get(&id) {
-                    let delta_pos = self.player.pos.pos - p.get().pos;
-                    const LINE_LEN: f32 = 5.0;
-                    if delta_pos.len() > LINE_LEN {
-                        let n = delta_pos.normalize_or_zero();
-                        let penetration = delta_pos.len() - LINE_LEN;
-                        self.player.pos.pos -= n * penetration;
-                        self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).max(0.0);
-                    }
-                }
-            } else {
+        if let Some(bobber_pos) = self.player.fishing_state.bobber_pos() {
+            let delta_pos = bobber_pos - self.player.pos.pos;
+            if delta_pos.len() > MAX_LINE_LEN {
                 self.player.fishing_state = FishingState::Idle;
                 self.play_sound_for_everyone(self.player.pos.pos, SoundType::StopFishing);
             }

@@ -11,6 +11,17 @@ pub enum FishingState {
     Attached(Id),
 }
 
+impl FishingState {
+    pub fn bobber_pos(&self) -> Option<Vec2<f32>> {
+        match self {
+            Self::Waiting(bobber_pos)
+            | Self::PreReeling { bobber_pos, .. }
+            | Self::Reeling { bobber_pos, .. } => Some(*bobber_pos),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlayerColors {
     pub hat: Rgba<f32>,

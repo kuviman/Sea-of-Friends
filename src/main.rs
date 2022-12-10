@@ -509,12 +509,21 @@ impl geng::State for Game {
             }
             geng::Event::MouseUp { position, button } => {
                 let pos = self.world_pos(position.map(|x| x as f32));
-                if button == geng::MouseButton::Left {
-                    if let FishingState::Spinning = self.player.fishing_state {
-                        self.player.fishing_state = FishingState::Casting(pos);
-                        self.play_sound_for_everyone(self.player.pos.pos, SoundType::Casting);
-                        self.play_sound_for_everyone(self.player.pos.pos, SoundType::Whip);
+                match button {
+                    geng::MouseButton::Left => {
+                        if let FishingState::Spinning = self.player.fishing_state {
+                            self.player.fishing_state = FishingState::Casting(
+                                self.player.pos.pos
+                                    + (pos - self.player.pos.pos).clamp_len(..=MAX_LINE_LEN - 0.1),
+                            );
+                            self.play_sound_for_everyone(self.player.pos.pos, SoundType::Casting);
+                            self.play_sound_for_everyone(self.player.pos.pos, SoundType::Whip);
+                        }
                     }
+                    geng::MouseButton::Right => {
+                        self.player_control = PlayerMovementControl::GoDirection(Vec2::ZERO);
+                    }
+                    _ => {}
                 }
             }
             geng::Event::MouseMove { position, .. } => {
