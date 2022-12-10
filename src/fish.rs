@@ -39,7 +39,7 @@ impl Model {
         if !nearby_fish.is_empty() {
             result /= nearby_fish.len() as f32;
         }
-        return result.sub(fish.pos.pos) / 20.0 * delta_time;
+        result.sub(fish.pos.pos) / 20.0 * delta_time
     }
     pub fn avoid(fish: &Fish, delta_time: f32, nearby_fish: &Vec<&Fish>) -> Vec2<f32> {
         let mut result: Vec2<f32> = Vec2::ZERO;
@@ -48,17 +48,17 @@ impl Model {
                 result -= fish2.pos.pos - fish.pos.pos;
             }
         }
-        return result * delta_time;
+        result * delta_time
     }
     pub fn match_velocity(fish: &Fish, delta_time: f32, nearby_fish: &Vec<&Fish>) -> Vec2<f32> {
         let mut result: Vec2<f32> = Vec2::ZERO;
         for fish in nearby_fish {
             result += fish.pos.vel;
         }
-        if nearby_fish.len() > 0 {
+        if !nearby_fish.is_empty() {
             result /= nearby_fish.len() as f32;
         }
-        return result.sub(fish.pos.vel) / 8.0 * delta_time;
+        result.sub(fish.pos.vel) / 8.0 * delta_time
     }
     pub fn currents(fish: &Fish, delta_time: f32) -> Vec2<f32> {
         let height = Map::get_height(Map::get(), fish.pos.pos);
@@ -116,10 +116,10 @@ impl Model {
                 x: fish.index as f32,
                 y: (fish.index % 2) as f32,
             };
-        return Vec2 {
+        Vec2 {
             x: scaled_pos.x.cos() + scaled_pos.y.cos(),
             y: scaled_pos.x.sin() + scaled_pos.y.sin(),
-        } * delta_time;
+        } * delta_time
     }
     pub fn update_fishes(&mut self, delta_time: f32, events: &mut Vec<Event>) {
         let reeling_fishes: HashSet<Id> = self
@@ -147,10 +147,10 @@ impl Model {
                         && f.index == fish.index
                 })
                 .collect();
-            let v1 = Self::flock(&fish, delta_time, &nearby_fish);
-            let v2 = Self::avoid(&fish, delta_time, &nearby_fish);
-            let v3 = Self::match_velocity(&fish, delta_time, &nearby_fish);
-            let v4 = Self::currents(&fish, delta_time);
+            let v1 = Self::flock(fish, delta_time, &nearby_fish);
+            let v2 = Self::avoid(fish, delta_time, &nearby_fish);
+            let v3 = Self::match_velocity(fish, delta_time, &nearby_fish);
+            let v4 = Self::currents(fish, delta_time);
 
             let v = v1 + v2 + v3 + v4;
             // let cur = Self::get_map_color(fish.pos.pos)[0];

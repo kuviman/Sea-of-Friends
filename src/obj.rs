@@ -175,7 +175,7 @@ async fn parse_mtl(
             // WTF .
             if texture_path != "." {
                 current_texture =
-                    <ugli::Texture as geng::LoadAsset>::load(&geng, &dir.join(texture_path))
+                    <ugli::Texture as geng::LoadAsset>::load(geng, &dir.join(texture_path))
                         .map_ok(|texture| {
                             // make_repeated(&mut texture);
                             Some(texture)

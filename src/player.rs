@@ -179,9 +179,9 @@ impl Game {
                 bobber = Some(bobber_pos.extend(bobber_depth));
             }
             FishingState::Attached(id) => {
-                if let Some(player) = self.model.get().players.get(&id) {
+                if let Some(player) = self.model.get().players.get(id) {
                     fishing_rod_rot = Some(1.0);
-                    if let Some(p) = self.interpolated.get(&id) {
+                    if let Some(p) = self.interpolated.get(id) {
                         bobber = Some(p.get().pos.extend(0.5));
                     }
                 }

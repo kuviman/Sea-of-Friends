@@ -428,13 +428,9 @@ impl geng::State for Game {
                                     .min()
                                 {
                                     can_fish = false;
-                                    if distance.raw() < 2.0 {
-                                        if self.money >= boat_type.cost
-                                            && self.player.boat_level < boat_level
-                                        {
-                                            self.money -= boat_type.cost;
-                                            self.player.boat_level = boat_level;
-                                        }
+                                    if distance.raw() < 2.0 && self.money >= boat_type.cost && self.player.boat_level < boat_level {
+                                        self.money -= boat_type.cost;
+                                        self.player.boat_level = boat_level;
                                     }
                                 }
                             }
@@ -513,9 +509,9 @@ fn main() {
         Model::new,
         move |geng, player_id, model| {
             geng::LoadingScreen::new(
-                &geng,
+                geng,
                 geng::EmptyLoadingScreen,
-                geng::LoadAsset::load(&geng, &static_path().join("assets")),
+                geng::LoadAsset::load(geng, &static_path().join("assets")),
                 {
                     let geng = geng.clone();
                     move |assets| {
