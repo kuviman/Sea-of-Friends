@@ -32,6 +32,7 @@ pub use shops::*;
 pub use sound::*;
 pub use util::*;
 
+// TODO: write the unit tests
 pub struct Game {
     player_id: Id,
     model: simple_net::Remote<Model>,
