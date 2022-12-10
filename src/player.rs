@@ -75,7 +75,7 @@ impl Game {
     }
     fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player, pos: &Position) {
         let height = Map::get().get_height(pos.pos);
-        if height < 0.0 {
+        if height < SHORE_HEIGHT {
             let boat_type_index = player.boat_level.max(1) as usize - 1;
             let model_matrix = Mat4::translate(pos.pos.extend(0.0))
                 * Mat4::rotate_z(pos.rot)
@@ -101,15 +101,24 @@ impl Game {
                     },
                 );
             }
+            self.draw_quad(
+                framebuffer,
+                Mat4::translate(pos.pos.extend(height.max(0.0)))
+                    * Mat4::rotate_x(-self.camera.rot_v)
+                    * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
+                    * Mat4::translate(vec3(0.0, 0.0, 1.0)),
+                &self.assets.player,
+            );
+        } else {
+            self.draw_quad(
+                framebuffer,
+                Mat4::translate(pos.pos.extend(height))
+                    * Mat4::rotate_x(-self.camera.rot_v)
+                    * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
+                    * Mat4::translate(vec3(0.0, 0.0, 1.0)),
+                &self.assets.player,
+            );
         }
-        self.draw_quad(
-            framebuffer,
-            Mat4::translate(pos.pos.extend(height.max(0.0)))
-                * Mat4::rotate_x(-self.camera.rot_v)
-                * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
-                * Mat4::translate(vec3(0.0, 0.0, 1.0)),
-            &self.assets.player,
-        );
         let mut fishing_rod_rot = None;
         let mut bobber = None;
         match &player.fishing_state {

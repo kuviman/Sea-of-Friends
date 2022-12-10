@@ -34,7 +34,7 @@ impl Game {
             self.player_control = PlayerMovementControl::GoDirection(wasd);
         }
 
-        let props = if Map::get().get_height(self.player.pos.pos) > 0.0 {
+        let props = if Map::get().get_height(self.player.pos.pos) > SHORE_HEIGHT {
             MovementProps {
                 max_speed: 2.0,
                 max_rotation_speed: 2.0,
@@ -59,7 +59,7 @@ impl Game {
 
         // handle collisions
         let player_radius = 1.0;
-        if Map::get().get_height(self.player.pos.pos) < 0.0 {
+        if Map::get().get_height(self.player.pos.pos) < SHORE_HEIGHT {
             for other_player in &self.model.get().players {
                 if other_player.id == self.player_id {
                     continue;
@@ -102,7 +102,7 @@ impl Game {
         // if self.player.boat_level < 1 {
         {
             let to_shore = vec_to(&self.map_geometry.shore_segments, self.player.pos.pos);
-            let player_radius = if Map::get().get_height(self.player.pos.pos) < 0.0 {
+            let player_radius = if Map::get().get_height(self.player.pos.pos) < SHORE_HEIGHT {
                 player_radius
             } else {
                 0.3
@@ -116,7 +116,7 @@ impl Game {
         }
         if self.player.boat_level < 2 {
             let to_deep = vec_to(&self.map_geometry.deep_segments, self.player.pos.pos);
-            let player_radius = if Map::get().get_height(self.player.pos.pos) < 0.0 {
+            let player_radius = if Map::get().get_height(self.player.pos.pos) < SHORE_HEIGHT {
                 player_radius
             } else {
                 0.3
@@ -152,7 +152,7 @@ impl Game {
                 let mut ignore = false;
                 match self.player.fishing_state {
                     FishingState::Casting(bobber_pos) => {
-                        if Map::get().get_height(bobber_pos) < 0.0 {
+                        if Map::get().get_height(bobber_pos) < SHORE_HEIGHT {
                             self.player.fishing_state = FishingState::Waiting(bobber_pos);
                         } else {
                             self.player.fishing_state = FishingState::Idle;

@@ -3,6 +3,7 @@ use super::*;
 const DEEPEST_DEPTH: f32 = -1.5;
 const HIGHEST_LAND: f32 = 0.5;
 const SIZE: f32 = 100.0;
+pub const SHORE_HEIGHT: f32 = -0.2;
 
 pub struct MapGeometry {
     pub land: ugli::VertexBuffer<ObjVertex>,
@@ -121,7 +122,7 @@ pub fn create_map_geometry(geng: &Geng, assets: &Assets) -> MapGeometry {
             if a.1 > b.1 {
                 mem::swap(&mut a, &mut b);
             }
-            let mid = 0.0;
+            let mid = SHORE_HEIGHT;
             if a.1 < mid && b.1 >= mid {
                 let t = (mid - a.1) / (b.1 - a.1);
                 let z = a.0 + t * (b.0 - a.0);

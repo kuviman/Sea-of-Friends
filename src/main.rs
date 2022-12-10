@@ -465,6 +465,17 @@ impl geng::State for Game {
                         }
                     }
                     geng::MouseButton::Right => {
+                        let mut teleport = None;
+                        if (pos - self.player.pos.pos).len() < 2.0 && self.player.boat_level > 0 {
+                            let land = |pos| Map::get().get_height(pos) > SHORE_HEIGHT;
+                            if land(pos) != land(self.player.pos.pos) {
+                                teleport = Some(pos);
+                            }
+                        }
+                        if let Some(pos) = teleport {
+                            self.player.pos.pos = pos;
+                            self.player.pos.vel = Vec2::ZERO;
+                        }
                         self.player_control = PlayerMovementControl::GoTo(pos);
                     }
                     geng::MouseButton::Middle => {
