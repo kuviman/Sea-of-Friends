@@ -21,26 +21,31 @@ impl IdGen {
     }
 }
 
-pub struct FishConfigs {
-    pub configs: Vec<FishConfig>
+impl Default for IdGen {
+    fn default() -> Self {
+        Self::new()
+    }
 }
-static mut FISHCONFIG: Option<FishConfigs> = None;
+
+pub struct FishConfigs {
+    pub configs: Vec<FishConfig>,
+}
+static mut FISH_CONFIG: Option<FishConfigs> = None;
 
 impl FishConfigs {
     pub fn get() -> &'static FishConfigs {
-        unsafe { FISHCONFIG.get_or_insert_with(FishConfigs::load) }
+        unsafe { FISH_CONFIG.get_or_insert_with(FishConfigs::load) }
     }
     pub fn load() -> Self {
         Self {
-            configs:
-            serde_json::from_reader(
+            configs: serde_json::from_reader(
                 std::fs::File::open(static_path().join("assets").join("fish").join("list.json"))
-                .unwrap(),
-            ).unwrap()
+                    .unwrap(),
+            )
+            .unwrap(),
         }
     }
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Diff)]
 pub struct Model {
@@ -53,7 +58,7 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new() -> Self {
+    pub fn init() -> Self {
         let mut id_gen = IdGen::new();
         Self {
             players: Collection::new(),
@@ -61,7 +66,7 @@ impl Model {
                 let mut fishes = Collection::new();
                 for i in 0..FishConfigs::get().configs.len() {
                     let fish_config = &FishConfigs::get().configs[i];
-                    for j in 0..fish_config.count { 
+                    for j in 0..fish_config.count {
                         let mut D: f32 = 10.0;
                         let mut center = Vec2::ZERO;
                         if let Some(spawn_circle) = &fish_config.spawn_circle {
@@ -71,7 +76,10 @@ impl Model {
                         fishes.insert(Fish::new(
                             id_gen.gen(),
                             i,
-                            vec2(center.x + global_rng().gen_range(-D..D), center.y + global_rng().gen_range(-D..D)),
+                            vec2(
+                                center.x + global_rng().gen_range(-D..D),
+                                center.y + global_rng().gen_range(-D..D),
+                            ),
                         ))
                     }
                 }

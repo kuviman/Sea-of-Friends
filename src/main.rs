@@ -428,7 +428,10 @@ impl geng::State for Game {
                                     .min()
                                 {
                                     can_fish = false;
-                                    if distance.raw() < 2.0 && self.money >= boat_type.cost && self.player.boat_level < boat_level {
+                                    if distance.raw() < 2.0
+                                        && self.money >= boat_type.cost
+                                        && self.player.boat_level < boat_level
+                                    {
                                         self.money -= boat_type.cost;
                                         self.player.boat_level = boat_level;
                                     }
@@ -472,13 +475,10 @@ impl geng::State for Game {
             }
             geng::Event::MouseUp { position, button } => {
                 let pos = self.world_pos(position.map(|x| x as f32));
-                match button {
-                    geng::MouseButton::Left => {
-                        if let FishingState::Spinning = self.player.fishing_state {
-                            self.player.fishing_state = FishingState::Casting(pos);
-                        }
+                if button == geng::MouseButton::Left {
+                    if let FishingState::Spinning = self.player.fishing_state {
+                        self.player.fishing_state = FishingState::Casting(pos);
                     }
-                    _ => {}
                 }
             }
             geng::Event::MouseMove { position, .. } => {
@@ -506,7 +506,7 @@ fn main() {
     // let geng = Geng::new("Sea of Friends");
     simple_net::run(
         "Sea of Friends",
-        Model::new,
+        Model::init,
         move |geng, player_id, model| {
             geng::LoadingScreen::new(
                 geng,
