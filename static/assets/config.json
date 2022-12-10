@@ -10,7 +10,7 @@
     "boat_types": [
         {
             "cost": 0,
-            "scale": 1,
+            "scale": 0.7,
             "shops": [
                 {
                     "x": 0,
