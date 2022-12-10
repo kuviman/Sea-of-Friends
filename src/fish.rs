@@ -227,6 +227,11 @@ impl Model {
                                 player: player.id,
                                 fish: fish.id,
                             });
+                            events.push(Event::Sound {
+                                player: Id(u64::MAX),
+                                sound_type: SoundType::Splash,
+                                pos: fish.pos.pos,
+                            });
                         }
                     }
                 }

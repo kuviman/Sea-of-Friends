@@ -76,17 +76,25 @@ pub struct PlayerAssets {
 
 #[derive(geng::Assets)]
 pub struct Sounds {
-    #[asset(range = "1..=5", path = "bobber_hit*.wav")]
-    pub bobber_hit: Vec<geng::Sound>,
-    // #[asset(range = "1..=5", path = "casting*.wav")]
-    #[asset(range = "1..=1", path = "casting1*.wav")]
+    #[asset(range = "1..=5", path = "splash*.wav")]
+    pub splash: Vec<geng::Sound>,
+    #[asset(range = "1..=5", path = "casting*.wav")]
     pub casting: Vec<geng::Sound>,
+    #[asset(range = "1..=2", path = "whip*.wav")]
+    pub whip: Vec<geng::Sound>,
+    pub show_fish: geng::Sound,
+    pub stop_fishing: geng::Sound,
+    pub ding: geng::Sound,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub enum SoundType {
-    BobberHit,
+    Splash,
     Casting,
+    Ding,
+    StopFishing,
+    ShowFish,
+    Whip,
 }
 
 #[derive(geng::Assets)]

@@ -475,9 +475,14 @@ impl geng::State for Game {
                                         }
                                     }
                                     self.player.fishing_state = FishingState::Idle;
+                                    self.play_sound(self.player.pos.pos, SoundType::Ding);
                                 }
                                 _ => {
                                     self.player.fishing_state = FishingState::Idle;
+                                    self.play_sound_for_everyone(
+                                        self.player.pos.pos,
+                                        SoundType::StopFishing,
+                                    );
                                 }
                             }
                         }
@@ -507,7 +512,8 @@ impl geng::State for Game {
                 if button == geng::MouseButton::Left {
                     if let FishingState::Spinning = self.player.fishing_state {
                         self.player.fishing_state = FishingState::Casting(pos);
-                        self.play_my_sound(self.player.pos.pos.extend(0.0), SoundType::Casting);
+                        self.play_sound_for_everyone(self.player.pos.pos, SoundType::Casting);
+                        self.play_sound_for_everyone(self.player.pos.pos, SoundType::Whip);
                     }
                 }
             }

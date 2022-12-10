@@ -1,7 +1,7 @@
 use super::*;
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct Id(u64);
+pub struct Id(pub u64);
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct IdGen {
@@ -109,7 +109,7 @@ pub enum Event {
     Sound {
         player: Id,
         sound_type: SoundType,
-        pos: Vec3<f32>,
+        pos: Vec2<f32>,
     },
 }
 

@@ -88,6 +88,7 @@ impl Game {
                 }
             } else {
                 self.player.fishing_state = FishingState::Idle;
+                self.play_sound_for_everyone(self.player.pos.pos, SoundType::StopFishing);
             }
         }
         if self.player.boat_level < 3 {
@@ -155,7 +156,7 @@ impl Game {
                         let mut sound_type = None;
                         if Map::get().get_height(bobber_pos) < SHORE_HEIGHT {
                             self.player.fishing_state = FishingState::Waiting(bobber_pos);
-                            sound_type = Some(SoundType::BobberHit);
+                            sound_type = Some(SoundType::Splash);
                         } else {
                             self.player.fishing_state = FishingState::Idle;
                         }
@@ -164,6 +165,10 @@ impl Game {
                             if (p.get().pos - bobber_pos).len() < player_radius {
                                 if other_player.id == self.player_id {
                                     self.player.fishing_state = FishingState::Idle;
+                                    self.play_sound_for_everyone(
+                                        self.player.pos.pos,
+                                        SoundType::StopFishing,
+                                    );
                                 } else {
                                     self.player.fishing_state =
                                         FishingState::Attached(other_player.id);
@@ -171,7 +176,7 @@ impl Game {
                             }
                         }
                         if let Some(sound_type) = sound_type {
-                            self.play_my_sound(bobber_pos.extend(0.0), sound_type);
+                            self.play_sound_for_everyone(bobber_pos, sound_type);
                         }
                     }
                     FishingState::PreReeling { fish, bobber_pos } => {
