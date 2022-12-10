@@ -36,12 +36,40 @@ pub struct ShopAssets {
 pub struct ShipAssets {
     #[asset(path = "model.obj")]
     pub obj: Obj,
+    #[asset(load_with = "future::ready(Ok::<_, anyhow::Error>(Vec::new()))")]
+    pub seats: Vec<Vec3<f32>>,
+}
+
+impl ShipAssets {
+    fn postprocess(list: &mut [Self]) {
+        for ship in list {
+            let mut seats = std::collections::BTreeMap::<usize, Vec3<f32>>::new();
+            for mesh in &ship.obj.meshes {
+                if let Some(index) = mesh.name.strip_prefix("Seat.") {
+                    let index = index.parse().unwrap();
+                    let mut p = Vec3::ZERO;
+                    for v in mesh.geometry.iter() {
+                        p += v.a_v;
+                    }
+                    seats.insert(index, p / mesh.geometry.len() as f32);
+                }
+            }
+            ship.obj
+                .meshes
+                .retain(|mesh| !mesh.name.starts_with("Seat."));
+            ship.seats = seats.values().copied().collect();
+        }
+    }
 }
 
 #[derive(geng::Assets)]
 pub struct Assets {
     pub shaders: Shaders,
-    #[asset(range = "1..=3", path = "ships/*")]
+    #[asset(
+        range = "1..=3",
+        path = "ships/*",
+        postprocess = "ShipAssets::postprocess"
+    )]
     pub ships: Vec<ShipAssets>,
     pub bobber: ugli::Texture,
     pub player: ugli::Texture,

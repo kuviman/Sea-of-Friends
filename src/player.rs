@@ -80,7 +80,8 @@ impl Game {
             let model_matrix = Mat4::translate(pos.pos.extend(0.0))
                 * Mat4::rotate_z(pos.rot)
                 * Mat4::scale_uniform(self.assets.config.boat_types[boat_type_index].scale);
-            let obj = &self.assets.ships[boat_type_index].obj;
+            let ship = &self.assets.ships[boat_type_index];
+            let obj = &ship.obj;
             for mesh in &obj.meshes {
                 ugli::draw(
                     framebuffer,
@@ -103,7 +104,7 @@ impl Game {
             }
             self.draw_quad(
                 framebuffer,
-                Mat4::translate(pos.pos.extend(height.max(0.0)))
+                Mat4::translate((model_matrix * ship.seats[0].extend(1.0)).xyz())
                     * Mat4::rotate_x(-self.camera.rot_v)
                     * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
                     * Mat4::translate(vec3(0.0, 0.0, 1.0)),
