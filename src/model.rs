@@ -96,12 +96,21 @@ pub enum Message {
     Update(Player),
     Catch(Id),
     SpawnFish { index: usize, pos: Vec2<f32> },
+    Broadcast(Event),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Event {
     Pong,
-    Reel { player: Id, fish: Id },
+    Reel {
+        player: Id,
+        fish: Id,
+    },
+    Sound {
+        player: Id,
+        sound_type: SoundType,
+        pos: Vec3<f32>,
+    },
 }
 
 impl simple_net::Model for Model {
@@ -137,6 +146,9 @@ impl simple_net::Model for Model {
             }
             Message::SpawnFish { index, pos } => {
                 self.fishes.insert(Fish::new(self.id_gen.gen(), index, pos));
+            }
+            Message::Broadcast(event) => {
+                events.push(event);
             }
         }
         vec![]

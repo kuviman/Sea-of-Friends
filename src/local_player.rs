@@ -152,8 +152,10 @@ impl Game {
                 let mut ignore = false;
                 match self.player.fishing_state {
                     FishingState::Casting(bobber_pos) => {
+                        let mut sound_type = None;
                         if Map::get().get_height(bobber_pos) < SHORE_HEIGHT {
                             self.player.fishing_state = FishingState::Waiting(bobber_pos);
+                            sound_type = Some(SoundType::BobberHit);
                         } else {
                             self.player.fishing_state = FishingState::Idle;
                         }
@@ -167,6 +169,9 @@ impl Game {
                                         FishingState::Attached(other_player.id);
                                 }
                             }
+                        }
+                        if let Some(sound_type) = sound_type {
+                            self.play_my_sound(bobber_pos.extend(0.0), sound_type);
                         }
                     }
                     FishingState::PreReeling { fish, bobber_pos } => {

@@ -14,6 +14,7 @@ pub mod movement;
 pub mod obj;
 pub mod player;
 pub mod shops;
+pub mod sound;
 pub mod util;
 
 pub use assets::*;
@@ -28,6 +29,7 @@ pub use movement::*;
 pub use obj::*;
 pub use player::*;
 pub use shops::*;
+pub use sound::*;
 pub use util::*;
 
 pub struct Game {
@@ -60,7 +62,7 @@ impl Game {
         player_id: Id,
         model: simple_net::Remote<Model>,
     ) -> Self {
-        assets.music.play();
+        assets.music.play().set_volume(0.1);
         Self {
             player_id,
             model,
@@ -326,6 +328,12 @@ impl geng::State for Game {
         let delta_time = delta_time as f32;
 
         self.camera.pos = self.player.pos.pos.extend(0.0);
+        self.geng
+            .audio()
+            .set_listener_position(self.player.pos.pos.extend(0.0).map(|x| x as f64));
+        self.geng
+            .audio()
+            .set_listener_orientation(vec3(0.0, 1.0, 0.0), vec3(0.0, 0.0, 1.0));
 
         let events = self.model.update();
         for i in self.interpolated.values_mut() {
@@ -360,6 +368,15 @@ impl geng::State for Game {
                             self.player.fishing_state =
                                 FishingState::PreReeling { fish, bobber_pos };
                         }
+                    }
+                }
+                Event::Sound {
+                    player,
+                    sound_type,
+                    pos,
+                } => {
+                    if player != self.player_id {
+                        self.play_sound(pos, sound_type);
                     }
                 }
             }
@@ -490,6 +507,7 @@ impl geng::State for Game {
                 if button == geng::MouseButton::Left {
                     if let FishingState::Spinning = self.player.fishing_state {
                         self.player.fishing_state = FishingState::Casting(pos);
+                        self.play_my_sound(self.player.pos.pos.extend(0.0), SoundType::Casting);
                     }
                 }
             }

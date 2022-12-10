@@ -75,6 +75,21 @@ pub struct PlayerAssets {
 }
 
 #[derive(geng::Assets)]
+pub struct Sounds {
+    #[asset(range = "1..=5", path = "bobber_hit*.wav")]
+    pub bobber_hit: Vec<geng::Sound>,
+    // #[asset(range = "1..=5", path = "casting*.wav")]
+    #[asset(range = "1..=1", path = "casting1*.wav")]
+    pub casting: Vec<geng::Sound>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+pub enum SoundType {
+    BobberHit,
+    Casting,
+}
+
+#[derive(geng::Assets)]
 pub struct Assets {
     pub shaders: Shaders,
     #[asset(
@@ -98,6 +113,7 @@ pub struct Assets {
     #[asset(path = "music.mp3", postprocess = "make_looped")]
     pub music: geng::Sound,
     pub shops: ShopAssets,
+    pub sounds: Sounds,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
