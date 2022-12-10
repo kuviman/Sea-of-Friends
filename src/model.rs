@@ -106,6 +106,12 @@ pub enum Event {
         player: Id,
         fish: Id,
     },
+    CaughtFish {
+        player: Id,
+        fish: Id,
+        fish_type: FishType,
+        position: Vec2<f32>,
+    },
     Sound {
         player: Id,
         sound_type: SoundType,
@@ -142,7 +148,14 @@ impl simple_net::Model for Model {
                 }
             }
             Message::Catch(id) => {
-                self.fishes.remove(&id);
+                if let Some(fish) = self.fishes.remove(&id) {
+                    events.push(Event::CaughtFish {
+                        fish: id,
+                        fish_type: fish.index,
+                        player: *player_id,
+                        position: fish.pos.pos,
+                    });
+                }
             }
             Message::SpawnFish { index, pos } => {
                 self.fishes.insert(Fish::new(self.id_gen.gen(), index, pos));

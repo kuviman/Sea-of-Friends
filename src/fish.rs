@@ -273,11 +273,35 @@ impl Game {
         for fish in &model.fishes {
             let Some(pos) = self.interpolated.get(&fish.id) else { continue };
             let pos = pos.get();
-            self.draw_fish(framebuffer, fish, &pos);
+            self.draw_fish(framebuffer, fish.index, &pos, -0.1);
+        }
+
+        for fish in &self.caught_fish {
+            let Some(target) = self.interpolated.get(&fish.player) else { continue; };
+            let target = target.get().pos;
+            let delta = target - fish.caught_at;
+            let length = delta.len();
+            let direction = delta / length;
+            let t = fish.lifetime.min(1.0);
+            let height_parameter = 5.0;
+            let height = (0.0 - t) * (height_parameter * (t - 1.0) - 1.0);
+            let pos = Position {
+                pos: fish.caught_at + direction * t * length,
+                vel: Vec2::ZERO,
+                rot: self.time.sin() + t * 3.0,
+                w: 0.0,
+            };
+            self.draw_fish(framebuffer, fish.index, &pos, height);
         }
     }
-    pub fn draw_fish(&self, framebuffer: &mut ugli::Framebuffer, fish: &Fish, pos: &Position) {
-        let texture = &self.assets.fishes[fish.index].texture;
+    pub fn draw_fish(
+        &self,
+        framebuffer: &mut ugli::Framebuffer,
+        fish_type: FishType,
+        pos: &Position,
+        height: f32,
+    ) {
+        let texture = &self.assets.fishes[fish_type].texture;
         let matrix = Mat4::translate(
             // {
             //     let mut pos = pos.pos;
@@ -294,7 +318,7 @@ impl Game {
             //     }
             //     pos
             // }
-            pos.pos.extend(-0.1),
+            pos.pos.extend(height),
         ) * Mat4::rotate_z(pos.rot)
             * Mat4::scale(texture.size().map(|x| x as f32 / 500.0).extend(1.0))
             * Mat4::rotate_x(f32::PI / 2.0);

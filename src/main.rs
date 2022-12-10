@@ -50,10 +50,20 @@ pub struct Game {
     ping_time: f32,
     send_ping: bool,
     map_geometry: MapGeometry,
+    caught_fish: Collection<CaughtFish>,
     inventory: Vec<FishType>,
     hovered_inventory_slot: Option<usize>,
     money: u32,
     fishdex: HashSet<FishType>,
+}
+
+#[derive(Debug, Clone, HasId)]
+struct CaughtFish {
+    id: Id,
+    index: FishType,
+    player: Id,
+    lifetime: f32,
+    caught_at: Vec2<f32>,
 }
 
 impl Game {
@@ -111,6 +121,7 @@ impl Game {
             ping_time: 0.0,
             send_ping: false,
             player_timings: HashMap::new(),
+            caught_fish: Collection::new(),
             inventory: Vec::new(),
             hovered_inventory_slot: None,
             money: 0,
@@ -370,6 +381,20 @@ impl geng::State for Game {
                         }
                     }
                 }
+                Event::CaughtFish {
+                    player,
+                    fish,
+                    fish_type,
+                    position,
+                } => {
+                    self.caught_fish.insert(CaughtFish {
+                        id: fish,
+                        index: fish_type,
+                        player,
+                        lifetime: 0.0,
+                        caught_at: position,
+                    });
+                }
                 Event::Sound {
                     player,
                     sound_type,
@@ -392,6 +417,15 @@ impl geng::State for Game {
 
         self.update_my_player(delta_time);
         self.update_local_player_data(delta_time);
+
+        for fish in &mut self.caught_fish {
+            fish.lifetime += delta_time;
+            if fish.lifetime >= 1.0 {
+                self.fishdex.insert(fish.index);
+                self.inventory.push(fish.index);
+            }
+        }
+        self.caught_fish.retain(|fish| fish.lifetime < 1.0);
     }
 
     fn handle_event(&mut self, event: geng::Event) {
@@ -464,8 +498,8 @@ impl geng::State for Game {
                                 FishingState::Reeling { fish, .. } => {
                                     self.model.send(Message::Catch(fish));
                                     if let Some(fish) = self.model.get().fishes.get(&fish) {
-                                        self.fishdex.insert(fish.index);
-                                        self.inventory.push(fish.index);
+                                        // self.fishdex.insert(fish.index);
+                                        // self.inventory.push(fish.index);
                                         if self.inventory.len() > self.assets.config.inventory_size
                                         {
                                             self.model.send(Message::SpawnFish {
