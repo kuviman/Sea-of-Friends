@@ -109,11 +109,9 @@ impl Game {
         } else {
             0.0
         };
-        let body_matrix = matrix
-            * Mat4::translate(vec3(0.0, 0.0, rot.abs()))
-            * Mat4::rotate_y(rot)
-            * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25)
-            * Mat4::translate(vec3(0.0, 0.0, 1.0));
+        matrix *= Mat4::translate(vec3(0.0, 0.0, rot.abs())) * Mat4::rotate_y(rot);
+        let body_matrix =
+            matrix * Mat4::scale(vec3(1.0, 0.0, 2.0) * 0.25) * Mat4::translate(vec3(0.0, 0.0, 1.0));
         let (skin, shirt) = if player.fish_in_hands.is_some() {
             (
                 &self.assets.player.skin_holding,
