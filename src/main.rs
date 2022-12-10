@@ -51,7 +51,6 @@ pub struct Game {
     hovered_inventory_slot: Option<usize>,
     money: u32,
     fishdex: HashSet<FishType>,
-    hover_boat_icon: bool,
 }
 
 impl Game {
@@ -113,7 +112,6 @@ impl Game {
             hovered_inventory_slot: None,
             money: 0,
             fishdex: HashSet::new(),
-            hover_boat_icon: false,
         }
     }
 
