@@ -22,6 +22,9 @@ impl Game {
                     self.camera.pos = pos.get().pos.extend(0.0);
                 }
                 self.player.pos.pos = other.pos.pos;
+                if Map::get().get_height(other.pos.pos) > SHORE_HEIGHT {
+                    self.player.seated = None;
+                }
             } else {
                 self.player.seated = None;
                 self.player.pos.pos = Vec2::ZERO;
