@@ -65,11 +65,11 @@ impl Model {
     pub fn congregate(fish: &Fish, delta_time: f32) -> Vec2<f32> {
         let height = Map::get_height(Map::get(), fish.pos.pos);
         if height > -0.3 {
-            // TODO: use normals here
-            return Vec2 {
-                x: (height + 0.301) * 10.0,
-                y: 0.0,
-            };
+            let delta = 0.1;
+            let hx = Map::get().get_height(fish.pos.pos + vec2(delta, 0.0));
+            let hy = Map::get().get_height(fish.pos.pos + vec2(delta, 0.0));
+            let gradient = vec2(height - hx, height - hy);
+            return gradient.normalize_or_zero() * 10.0;
         }
         let spawn_circle = &FishConfigs::get().configs[fish.index].spawn_circle;
         let dist = spawn_circle.center.sub(fish.pos.pos);
