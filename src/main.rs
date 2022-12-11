@@ -887,6 +887,11 @@ impl geng::State for Game {
                 if key == geng::Key::Tab {
                     self.show_names = !self.show_names;
                 }
+                if key == geng::Key::PageDown {
+                    self.player.pos.pos = Vec2::ZERO;
+                    self.player.seated = None;
+                    self.player_control = PlayerMovementControl::GoDirection(Vec2::ZERO);
+                }
                 if self.editing_name {
                     if key == geng::Key::Backspace {
                         self.player.name.pop();
