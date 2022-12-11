@@ -10,6 +10,24 @@ pub enum PlayerMovementControl {
 impl Game {
     pub fn update_my_player(&mut self, delta_time: f32) {
         let in_water = Map::get().get_height(self.player.pos.pos) < SHORE_HEIGHT;
+
+        let props = if !in_water {
+            MovementProps {
+                max_speed: 2.0,
+                max_rotation_speed: 2.0,
+                angular_acceleration: 1.0,
+                acceleration: 10.0,
+                water: false,
+            }
+        } else {
+            MovementProps {
+                max_speed: 2.0,
+                max_rotation_speed: 2.0,
+                angular_acceleration: 1.0,
+                acceleration: 1.0,
+                water: true,
+            }
+        };
         let mut player_radius = 1.0;
         if self.player.boat_level > 0 && in_water {
             player_radius *=
@@ -63,23 +81,6 @@ impl Game {
                 self.player_control = PlayerMovementControl::GoDirection(wasd);
             }
 
-            let props = if !in_water {
-                MovementProps {
-                    max_speed: 2.0,
-                    max_rotation_speed: 2.0,
-                    angular_acceleration: 1.0,
-                    acceleration: 10.0,
-                    water: false,
-                }
-            } else {
-                MovementProps {
-                    max_speed: 2.0,
-                    max_rotation_speed: 2.0,
-                    angular_acceleration: 1.0,
-                    acceleration: 1.0,
-                    water: true,
-                }
-            };
             let target_pos = match self.player_control {
                 PlayerMovementControl::GoTo(pos) => pos,
                 PlayerMovementControl::GoDirection(dir) => {
@@ -88,35 +89,6 @@ impl Game {
             };
 
             update_movement(&mut self.player.pos, target_pos, props.clone(), delta_time);
-            if let FishingState::Attached(id) = self.player.fishing_state {
-                if let Some(other_player) = self.model.get().players.get(&id) {
-                    if let Some(p) = self.interpolated.get(&id) {
-                        let delta_pos = self.player.pos.pos - p.get().pos;
-                        const MIN_LINE_LEN: f32 = 4.0;
-                        if delta_pos.len() > MIN_LINE_LEN {
-                            update_movement(
-                                &mut self.player.pos,
-                                p.get().pos,
-                                MovementProps {
-                                    acceleration: props.acceleration * 2.0,
-                                    ..props
-                                },
-                                delta_time,
-                            );
-                        }
-                        if delta_pos.len() > MAX_LINE_LEN {
-                            self.player.fishing_state = FishingState::Idle;
-                            self.play_sound_for_everyone(
-                                self.player.pos.pos,
-                                SoundType::StopFishing,
-                            );
-                        }
-                    }
-                } else {
-                    self.player.fishing_state = FishingState::Idle;
-                    self.play_sound_for_everyone(self.player.pos.pos, SoundType::StopFishing);
-                }
-            }
 
             // handle collisions
             if in_water {
@@ -139,13 +111,6 @@ impl Game {
                         self.player.pos.pos += n * penetration;
                         self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
                     }
-                }
-            }
-            if let Some(bobber_pos) = self.player.fishing_state.bobber_pos() {
-                let delta_pos = bobber_pos - self.player.pos.pos;
-                if delta_pos.len() > MAX_LINE_LEN {
-                    self.player.fishing_state = FishingState::Idle;
-                    self.play_sound_for_everyone(self.player.pos.pos, SoundType::StopFishing);
                 }
             }
             // collide with world edge
@@ -198,6 +163,40 @@ impl Game {
                     self.player.pos.pos += n * penetration;
                     self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
                 }
+            }
+        }
+
+        if let Some(bobber_pos) = self.player.fishing_state.bobber_pos() {
+            let delta_pos = bobber_pos - self.player.pos.pos;
+            if delta_pos.len() > MAX_LINE_LEN {
+                self.player.fishing_state = FishingState::Idle;
+                self.play_sound_for_everyone(self.player.pos.pos, SoundType::StopFishing);
+            }
+        }
+        if let FishingState::Attached(id) = self.player.fishing_state {
+            if let Some(other_player) = self.model.get().players.get(&id) {
+                if let Some(p) = self.interpolated.get(&id) {
+                    let delta_pos = self.player.pos.pos - p.get().pos;
+                    const MIN_LINE_LEN: f32 = 4.0;
+                    if delta_pos.len() > MIN_LINE_LEN {
+                        update_movement(
+                            &mut self.player.pos,
+                            p.get().pos,
+                            MovementProps {
+                                acceleration: props.acceleration * 2.0,
+                                ..props
+                            },
+                            delta_time,
+                        );
+                    }
+                    if delta_pos.len() > MAX_LINE_LEN {
+                        self.player.fishing_state = FishingState::Idle;
+                        self.play_sound_for_everyone(self.player.pos.pos, SoundType::StopFishing);
+                    }
+                }
+            } else {
+                self.player.fishing_state = FishingState::Idle;
+                self.play_sound_for_everyone(self.player.pos.pos, SoundType::StopFishing);
             }
         }
 
