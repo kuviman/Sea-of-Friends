@@ -13,9 +13,9 @@ impl Game {
         }
         for (index, boat_type) in self.assets.config.boat_types.iter().enumerate() {
             let texture = [
-                &self.assets.shops.rowboat,
-                &self.assets.shops.temp,
-                &self.assets.shops.temp,
+                &self.assets.shops.itsboats,
+                &self.assets.shops.big_boat_shop,
+                &self.assets.shops.air_shop,
             ][index];
             for &pos in &boat_type.shops {
                 self.draw_texture(

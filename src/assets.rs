@@ -32,8 +32,11 @@ pub struct BoatConfig {
 #[derive(geng::Assets)]
 pub struct ShopAssets {
     pub fish: ugli::Texture,
-    pub temp: ugli::Texture,
-    pub rowboat: ugli::Texture,
+    // pub temp: ugli::Texture,
+    // pub rowboat: ugli::Texture,
+    pub itsboats: ugli::Texture,
+    pub air_shop: ugli::Texture,
+    pub big_boat_shop: ugli::Texture,
 }
 
 #[derive(geng::Assets)]

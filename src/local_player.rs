@@ -170,7 +170,7 @@ impl Game {
                 let to_deep = vec_to(&self.map_geometry.deep_segments, self.player.pos.pos);
                 let player_radius = if in_water { player_radius } else { 0.3 };
                 if to_deep.len() < player_radius {
-                    self.tutorial = "you need a bigger boat to travel the deep sea".to_owned();
+                    self.tutorial = "you need a bigger boat to explore the deep sea".to_owned();
                     self.tutorial_timer = 5.0;
                     let n = -to_deep.normalize_or_zero();
                     let penetration = player_radius - to_deep.len();
