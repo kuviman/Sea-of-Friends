@@ -378,9 +378,30 @@ impl Game {
 impl geng::State for Game {
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         self.framebuffer_size = framebuffer.size().map(|x| x as f32);
+        self.geng.draw_2d(
+            framebuffer,
+            &geng::Camera2d {
+                center: Vec2::ZERO,
+                rotation: 0.0,
+                fov: (self.assets.background.size().y as f32).min(
+                    self.assets.background.size().x as f32 * self.framebuffer_size.y
+                        / self.framebuffer_size.x,
+                ) * 0.8,
+            },
+            &draw_2d::TexturedQuad::unit(&self.assets.background)
+                .scale(self.assets.background.size().map(|x| x as f32 / 2.0))
+                .translate(
+                    self.assets.background.size().map(|x| x as f32 / 2.0)
+                        * self
+                            .camera
+                            .pos
+                            .xy()
+                            .map(|x| (-x / SIZE).clamp(-1.0, 1.0) * 0.2),
+                ),
+        );
         ugli::clear(
             framebuffer,
-            Some(self.assets.config.space_color),
+            None, // Some(self.assets.config.space_color),
             Some(1.0),
             None,
         );
@@ -813,7 +834,7 @@ impl geng::State for Game {
                         self.player_control = PlayerMovementControl::GoTo(pos);
                     }
                     geng::MouseButton::Middle => {
-                        // self.player.pos.pos = pos;
+                        self.player.pos.pos = pos;
                         println!("{}", pos)
                     }
                 }

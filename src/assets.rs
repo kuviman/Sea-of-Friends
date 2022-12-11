@@ -144,6 +144,7 @@ pub struct Assets {
     pub sounds: Sounds,
     #[asset(load_with = "load_environment(&geng, &base_path.join(\"environment\"))")]
     pub environment: EnvironmentAssets,
+    pub background: ugli::Texture,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
