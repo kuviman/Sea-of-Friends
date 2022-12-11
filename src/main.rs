@@ -61,8 +61,8 @@ pub struct Game {
     fishdex: HashSet<FishType>,
     splashes: Vec<Splash>,
     boat_sound_effects: HashMap<Id, geng::SoundEffect>,
-    main_tutorial: String,
-    main_tutorial_timer: f32,
+    tutorial: String,
+    tutorial_timer: f32,
 }
 
 #[derive(Debug, Clone, HasId)]
@@ -136,8 +136,8 @@ impl Game {
             fishdex: HashSet::new(),
             splashes: Vec::new(),
             boat_sound_effects: HashMap::new(),
-            main_tutorial: "".to_owned(),
-            main_tutorial_timer: 0.0,
+            tutorial: "left mouse to fish\nright mouse to move".to_owned(),
+            tutorial_timer: 100000000.0,
         }
     }
 
@@ -352,7 +352,7 @@ impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
         let delta_time = delta_time as f32;
 
-        self.main_tutorial_timer -= delta_time;
+        self.tutorial_timer -= delta_time;
 
         self.player.inventory = self.inventory.clone(); // NOICE
 
@@ -444,6 +444,24 @@ impl geng::State for Game {
         }
         self.caught_fish.retain(|fish| fish.lifetime < 1.0);
 
+        if self.inventory.len() > self.assets.config.inventory_size {
+            self.tutorial =
+                "your inventory is limited!\nyou should maybe go sell some fish?".to_owned();
+            self.tutorial_timer = 5.0;
+            self.model.send(Message::SpawnFish {
+                index: self.inventory.remove(0),
+                pos: self.player.pos.pos,
+            });
+            self.play_sound_for_everyone(
+                self.player.pos.pos,
+                if Map::get().get_height(self.player.pos.pos) > 0.0 {
+                    SoundType::DropFishLand
+                } else {
+                    SoundType::DropFishWater
+                },
+            );
+        }
+
         for splash in &mut self.splashes {
             splash.lifetime += delta_time * 1.5;
         }
@@ -494,6 +512,22 @@ impl geng::State for Game {
                                     self.player.pos.pos,
                                     SoundType::UpgradeBoat,
                                 );
+                                if boat_level == 1 {
+                                    self.tutorial =
+                                        "right click water when near it\nto get into the boat"
+                                            .to_owned();
+                                    self.tutorial_timer = 10.0;
+                                }
+                                if boat_level == 2 {
+                                    self.tutorial = "you can now explore the deep sea".to_owned();
+                                    self.tutorial_timer = 10.0;
+                                }
+                                if boat_level == 3 {
+                                    self.tutorial =
+                                        "you can now explore beyond the edge of the world"
+                                            .to_owned();
+                                    self.tutorial_timer = 10.0;
+                                }
                             }
                         }
                         if can_fish {
@@ -503,17 +537,6 @@ impl geng::State for Game {
                                 }
                                 FishingState::Reeling { fish, .. } => {
                                     self.model.send(Message::Catch(fish));
-                                    if let Some(fish) = self.model.get().fishes.get(&fish) {
-                                        // self.fishdex.insert(fish.index);
-                                        // self.inventory.push(fish.index);
-                                        if self.inventory.len() > self.assets.config.inventory_size
-                                        {
-                                            self.model.send(Message::SpawnFish {
-                                                index: self.inventory.remove(0),
-                                                pos: self.player.pos.pos,
-                                            });
-                                        }
-                                    }
                                     self.player.fishing_state = FishingState::Idle;
                                     self.play_sound(self.player.pos.pos, SoundType::Ding);
                                 }
