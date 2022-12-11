@@ -448,6 +448,7 @@ impl geng::State for Game {
                 ),
                 ugli::DrawParameters {
                     depth_func: Some(ugli::DepthFunc::Less),
+
                     ..default()
                 },
             );
@@ -490,6 +491,7 @@ impl geng::State for Game {
             ),
             ugli::DrawParameters {
                 depth_func: Some(ugli::DepthFunc::Less),
+                blend_mode: Some(ugli::BlendMode::default()),
                 ..default()
             },
         );
