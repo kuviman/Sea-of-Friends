@@ -224,7 +224,7 @@ impl Map {
     pub fn get_height(&self, pos: Vec2<f32>) -> f32 {
         self.get_channel_value(0, pos) * (HIGHEST_LAND - DEEPEST_DEPTH) + DEEPEST_DEPTH
     }
-    fn get_channel_value(&self, channel: usize, pos: Vec2<f32>) -> f32 {
+    pub fn get_channel_value(&self, channel: usize, pos: Vec2<f32>) -> f32 {
         let uv = pos.map(|x| ((x + SIZE) / (2.0 * SIZE)) * self.image.width() as f32);
         let values: [[f32; 2]; 2] = std::array::from_fn(|dx| {
             std::array::from_fn(|dy| {

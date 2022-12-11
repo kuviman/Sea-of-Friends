@@ -202,10 +202,14 @@ impl Game {
                 match self.player.fishing_state {
                     FishingState::Casting(bobber_pos) => {
                         let mut sound_type = None;
-                        if Map::get().get_height(bobber_pos) < SHORE_HEIGHT {
+                        if Map::get().get_height(bobber_pos) < SHORE_HEIGHT
+                            && Map::get().get_channel_value(3, bobber_pos) > 0.5
+                        {
+                            // This is water
                             self.player.fishing_state = FishingState::Waiting(bobber_pos);
                             sound_type = Some(SoundType::Splash);
                         } else {
+                            // This is land/space
                             // TODO: make this code self explanatory
                             for fish in &self.model.get().fishes {
                                 if (fish.pos.pos - bobber_pos).len() < 1.0 {
