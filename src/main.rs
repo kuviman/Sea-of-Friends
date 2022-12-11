@@ -68,6 +68,7 @@ pub struct Game {
     shallow_environment: Vec<ugli::VertexBuffer<ObjInstance>>,
     editing_name: bool,
     target_cam_distance: f32,
+    show_reel_tutorial: bool,
 }
 
 #[derive(Debug, Clone, HasId)]
@@ -127,6 +128,7 @@ impl Game {
             }
         }
         Self {
+            show_reel_tutorial: true,
             target_cam_distance: 20.0,
             editing_name: true,
             land_environment,
