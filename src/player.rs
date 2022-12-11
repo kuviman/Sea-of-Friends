@@ -45,6 +45,7 @@ pub struct Player {
     pub boat_level: u8,
     pub colors: PlayerColors,
     pub seated: Option<Seated>,
+    pub inventory: Vec<FishType>,
 }
 
 impl Player {
@@ -72,6 +73,7 @@ impl Player {
                 }
             },
             seated: None,
+            inventory: Vec::new(),
         }
     }
 }

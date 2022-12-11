@@ -341,6 +341,8 @@ impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
         let delta_time = delta_time as f32;
 
+        self.player.inventory = self.inventory.clone(); // NOICE
+
         self.geng
             .audio()
             .set_listener_position(self.player.pos.pos.extend(0.0).map(|x| x as f64));
