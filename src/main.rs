@@ -68,6 +68,7 @@ pub struct Game {
     trees_environment: Vec<ugli::VertexBuffer<ObjInstance>>,
     shallow_environment: Vec<ugli::VertexBuffer<ObjInstance>>,
     editing_name: bool,
+    show_names: bool,
     target_cam_distance: f32,
     show_reel_tutorial: bool,
 }
@@ -183,6 +184,7 @@ impl Game {
             }
         }
         Self {
+            show_names: true,
             show_reel_tutorial: true,
             target_cam_distance: 20.0,
             editing_name: true,
@@ -857,6 +859,9 @@ impl geng::State for Game {
             geng::Event::KeyDown { key } => {
                 if key == geng::Key::Enter {
                     self.editing_name = !self.editing_name;
+                }
+                if key == geng::Key::Tab {
+                    self.show_names = !self.show_names;
                 }
                 if self.editing_name {
                     if key == geng::Key::Backspace {
