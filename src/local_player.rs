@@ -9,7 +9,12 @@ pub enum PlayerMovementControl {
 
 impl Game {
     pub fn update_my_player(&mut self, delta_time: f32) {
-        let player_radius = 1.0;
+        let in_water = Map::get().get_height(self.player.pos.pos) < SHORE_HEIGHT;
+        let mut player_radius = 1.0;
+        if self.player.boat_level > 0 && in_water {
+            player_radius *=
+                self.assets.config.boat_types[(self.player.boat_level - 1) as usize].scale;
+        }
         self.camera.pos = self.player.pos.pos.extend(0.0);
         if let Some(seated) = self.player.seated {
             if let Some(other) = self.model.get().players.get(&seated.player) {
@@ -51,7 +56,7 @@ impl Game {
                 self.player_control = PlayerMovementControl::GoDirection(wasd);
             }
 
-            let props = if Map::get().get_height(self.player.pos.pos) > SHORE_HEIGHT {
+            let props = if !in_water {
                 MovementProps {
                     max_speed: 2.0,
                     max_rotation_speed: 2.0,
@@ -107,7 +112,7 @@ impl Game {
             }
 
             // handle collisions
-            if Map::get().get_height(self.player.pos.pos) < SHORE_HEIGHT {
+            if in_water {
                 for other_player in &self.model.get().players {
                     if other_player.id == self.player_id {
                         continue;
@@ -144,11 +149,7 @@ impl Game {
             // if self.player.boat_level < 1 {
             {
                 let to_shore = vec_to(&self.map_geometry.shore_segments, self.player.pos.pos);
-                let player_radius = if Map::get().get_height(self.player.pos.pos) < SHORE_HEIGHT {
-                    player_radius
-                } else {
-                    0.3
-                };
+                let player_radius = if in_water { player_radius } else { 0.3 };
                 if to_shore.len() < player_radius {
                     let n = -to_shore.normalize_or_zero();
                     let penetration = player_radius - to_shore.len();
@@ -158,11 +159,7 @@ impl Game {
             }
             if self.player.boat_level < 2 {
                 let to_deep = vec_to(&self.map_geometry.deep_segments, self.player.pos.pos);
-                let player_radius = if Map::get().get_height(self.player.pos.pos) < SHORE_HEIGHT {
-                    player_radius
-                } else {
-                    0.3
-                };
+                let player_radius = if in_water { player_radius } else { 0.3 };
                 if to_deep.len() < player_radius {
                     let n = -to_deep.normalize_or_zero();
                     let penetration = player_radius - to_deep.len();

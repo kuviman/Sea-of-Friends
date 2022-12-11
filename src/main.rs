@@ -538,7 +538,13 @@ impl geng::State for Game {
                                     if land(p.get().pos) {
                                         continue;
                                     }
-                                    if (p.get().pos - pos).len() < 1.0 {
+                                    let mut other_player_radius = 1.0;
+                                    if other_player.boat_level > 0 {
+                                        other_player_radius *= self.assets.config.boat_types
+                                            [(other_player.boat_level - 1) as usize]
+                                            .scale;
+                                    }
+                                    if (p.get().pos - pos).len() < other_player_radius {
                                         seated = true;
                                         let mut seats: HashSet<usize> = (1..self.assets.ships
                                             [other_player.boat_level.max(1) as usize - 1]
