@@ -332,6 +332,7 @@ impl Game {
                 FishBehavior::Land => {
                     stand_up = true;
                     height += 0.5;
+                    height += ((self.time * 10.0).sin() * fish.pos.vel.len().min(1.0) * 0.1).abs();
                 }
                 FishBehavior::Space => {
                     stand_up = true;
