@@ -359,7 +359,7 @@ impl Game {
         };
         if let Some(screen) = self
             .camera
-            .world_to_screen(self.framebuffer_size, character_pos + vec3(0.0, 0.0, 1.0))
+            .world_to_screen(self.framebuffer_size, character_pos + vec3(0.0, 0.0, 1.5))
         {
             self.draw_text(
                 framebuffer,
