@@ -1,0 +1,29 @@
+{
+    "land": [
+        "tree1",
+        "tree2",
+        "tree3",
+        "tree4",
+        "grass",
+        "grass2",
+        "shell1",
+        "shell2",
+        "shell3",
+        "starfish",
+        "stone",
+        "land_thing",
+        "thing2"
+    ],
+    "shallow": [
+        "seagrass",
+        "seagrass2",
+        "seagrass3",
+        "seagrass4",
+        "thing2",
+        "shell1",
+        "shell2",
+        "shell3",
+        "pink_thing",
+        "the_orange_one"
+    ]
+}

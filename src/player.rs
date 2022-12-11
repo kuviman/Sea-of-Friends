@@ -287,25 +287,32 @@ impl Game {
                     framebuffer,
                     &self.assets.shaders.obj,
                     ugli::DrawMode::LineStrip { line_width: 1.0 },
-                    &ugli::VertexBuffer::new_dynamic(self.geng.ugli(), {
-                        const N: i32 = 10;
-                        (0..=N)
-                            .map(|i| {
-                                let t = i as f32 / N as f32;
-                                ObjVertex {
-                                    a_v: fishing_rod_pos * (1.0 - t)
-                                        + bobber_pos * t
-                                        + vec3(0.0, 0.0, (t * 2.0 - 1.0).sqr() - 1.0),
-                                    a_uv: Vec2::ZERO,
-                                    a_vn: Vec3::ZERO,
-                                }
-                            })
-                            .collect()
-                    }),
+                    ugli::instanced(
+                        &ugli::VertexBuffer::new_dynamic(self.geng.ugli(), {
+                            const N: i32 = 10;
+                            (0..=N)
+                                .map(|i| {
+                                    let t = i as f32 / N as f32;
+                                    ObjVertex {
+                                        a_v: fishing_rod_pos * (1.0 - t)
+                                            + bobber_pos * t
+                                            + vec3(0.0, 0.0, (t * 2.0 - 1.0).sqr() - 1.0),
+                                        a_uv: Vec2::ZERO,
+                                        a_vn: Vec3::ZERO,
+                                    }
+                                })
+                                .collect()
+                        }),
+                        &ugli::VertexBuffer::new_dynamic(
+                            self.geng.ugli(),
+                            vec![ObjInstance {
+                                i_model_matrix: Mat4::identity(),
+                            }],
+                        ),
+                    ),
                     (
                         ugli::uniforms! {
                             u_color: Rgba::WHITE,
-                            u_model_matrix: Mat4::identity(),
                             u_texture: &self.white_texture,
                         },
                         geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
@@ -378,11 +385,18 @@ impl Game {
                     framebuffer,
                     &self.assets.shaders.obj,
                     ugli::DrawMode::Triangles,
-                    &mesh.geometry,
+                    ugli::instanced(
+                        &mesh.geometry,
+                        &ugli::VertexBuffer::new_dynamic(
+                            self.geng.ugli(),
+                            vec![ObjInstance {
+                                i_model_matrix: model_matrix,
+                            }],
+                        ),
+                    ),
                     (
                         ugli::uniforms! {
                             u_color: mesh.material.diffuse_color,
-                            u_model_matrix: model_matrix,
                             u_texture: mesh.material.texture.as_deref().unwrap_or(&self.white_texture),
                         },
                         geng::camera3d_uniforms(&self.camera, self.framebuffer_size),

@@ -63,6 +63,8 @@ pub struct Game {
     boat_sound_effects: HashMap<Id, geng::SoundEffect>,
     tutorial: String,
     tutorial_timer: f32,
+    land_environment: Vec<ugli::VertexBuffer<ObjInstance>>,
+    shallow_environment: Vec<ugli::VertexBuffer<ObjInstance>>,
 }
 
 #[derive(Debug, Clone, HasId)]
@@ -82,7 +84,48 @@ impl Game {
         model: simple_net::Remote<Model>,
     ) -> Self {
         assets.music.play().set_volume(0.1);
+        let mut land_environment: Vec<ugli::VertexBuffer<ObjInstance>> =
+            (0..assets.environment.land.len())
+                .map(|_| ugli::VertexBuffer::new_static(geng.ugli(), vec![]))
+                .collect();
+        let mut shallow_environment: Vec<ugli::VertexBuffer<ObjInstance>> =
+            (0..assets.environment.shallow.len())
+                .map(|_| ugli::VertexBuffer::new_static(geng.ugli(), vec![]))
+                .collect();
+        {
+            // Generate the environment
+            let mut rng = StdRng::seed_from_u64(1234);
+            for _ in 0..10000 {
+                let pos = vec2(rng.gen_range(-SIZE..SIZE), rng.gen_range(-SIZE..SIZE));
+                let height = Map::get().get_height(pos);
+                if height > 0.0 {
+                    let idx = rng.gen_range(0..assets.environment.land.len());
+                    let texture = &assets.environment.land[idx];
+                    land_environment[idx].push(ObjInstance {
+                        i_model_matrix: Mat4::translate(pos.extend(height))
+                            * Mat4::scale({
+                                let s = texture.size().map(|x| x as f32) * 0.002;
+                                vec3(s.x, 1.0, s.y)
+                            })
+                            * Mat4::translate(vec3(0.0, 0.0, 1.0)),
+                    });
+                } else if height > -1.0 && height < -0.5 {
+                    let idx = rng.gen_range(0..assets.environment.shallow.len());
+                    let texture = &assets.environment.shallow[idx];
+                    shallow_environment[idx].push(ObjInstance {
+                        i_model_matrix: Mat4::translate(pos.extend(height))
+                            * Mat4::scale({
+                                let s = texture.size().map(|x| x as f32) * 0.001;
+                                vec3(s.x, 1.0, s.y)
+                            })
+                            * Mat4::translate(vec3(0.0, 0.0, 1.0)),
+                    });
+                }
+            }
+        }
         Self {
+            land_environment,
+            shallow_environment,
             player_id,
             model,
             time: 0.0,
@@ -152,10 +195,17 @@ impl Game {
             framebuffer,
             &self.assets.shaders.obj,
             ugli::DrawMode::TriangleFan,
-            &self.quad,
+            ugli::instanced(
+                &self.quad,
+                &ugli::VertexBuffer::new_dynamic(
+                    self.geng.ugli(),
+                    vec![ObjInstance {
+                        i_model_matrix: matrix,
+                    }],
+                ),
+            ),
             (
                 ugli::uniforms! {
-                    u_model_matrix: matrix,
                     u_color: color,
                     u_texture: texture,
                 },
@@ -168,33 +218,6 @@ impl Game {
             },
         );
     }
-
-    pub fn draw_quad2(
-        &self,
-        framebuffer: &mut ugli::Framebuffer,
-        matrix: Mat4<f32>,
-        texture: &ugli::Texture,
-    ) {
-        ugli::draw(
-            framebuffer,
-            &self.assets.shaders.obj2,
-            ugli::DrawMode::TriangleFan,
-            &self.quad,
-            (
-                ugli::uniforms! {
-                    u_model_matrix: matrix,
-                    u_texture: texture,
-                },
-                geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
-            ),
-            ugli::DrawParameters {
-                blend_mode: Some(ugli::BlendMode::default()),
-                depth_func: Some(ugli::DepthFunc::Less),
-                ..default()
-            },
-        );
-    }
-
     pub fn draw_texture(
         &self,
         framebuffer: &mut ugli::Framebuffer,
@@ -220,6 +243,49 @@ impl Game {
     pub fn world_pos(&self, mouse_pos: Vec2<f32>) -> Vec2<f32> {
         let camera_ray = self.camera.pixel_ray(self.framebuffer_size, mouse_pos);
         camera_ray.from.xy() - camera_ray.dir.xy() * camera_ray.from.z / camera_ray.dir.z
+    }
+
+    pub fn draw_environment(&self, framebuffer: &mut ugli::Framebuffer) {
+        for (index, instances) in self.land_environment.iter().enumerate() {
+            ugli::draw(
+                framebuffer,
+                &self.assets.shaders.obj,
+                ugli::DrawMode::TriangleFan,
+                ugli::instanced(&self.quad, instances),
+                (
+                    ugli::uniforms! {
+                        u_color: Rgba::WHITE,
+                        u_texture: &self.assets.environment.land[index],
+                    },
+                    geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
+                ),
+                ugli::DrawParameters {
+                    // blend_mode: Some(ugli::BlendMode::default()),
+                    depth_func: Some(ugli::DepthFunc::LessOrEqual),
+                    ..default()
+                },
+            );
+        }
+        for (index, instances) in self.shallow_environment.iter().enumerate() {
+            ugli::draw(
+                framebuffer,
+                &self.assets.shaders.obj,
+                ugli::DrawMode::TriangleFan,
+                ugli::instanced(&self.quad, instances),
+                (
+                    ugli::uniforms! {
+                        u_color: Rgba::WHITE,
+                        u_texture: &self.assets.environment.shallow[index],
+                    },
+                    geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
+                ),
+                ugli::DrawParameters {
+                    // blend_mode: Some(ugli::BlendMode::default()),
+                    depth_func: Some(ugli::DepthFunc::LessOrEqual),
+                    ..default()
+                },
+            );
+        }
     }
 }
 
@@ -253,6 +319,7 @@ impl geng::State for Game {
         self.draw_fishes(framebuffer);
         self.draw_players(framebuffer);
         self.draw_shops(framebuffer);
+        self.draw_environment(framebuffer);
 
         // TODO
         let mut depth_texture =

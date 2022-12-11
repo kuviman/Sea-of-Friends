@@ -29,7 +29,7 @@ pub struct Obj {
 #[derive(ugli::Vertex, Debug, Clone)]
 pub struct ObjInstance {
     pub i_model_matrix: Mat4<f32>,
-    pub i_color: Rgba<f32>,
+    // pub i_color: Rgba<f32>,
 }
 
 impl geng::LoadAsset for Obj {

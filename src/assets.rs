@@ -7,7 +7,6 @@ pub struct Shaders {
     pub land2: ugli::Program,
     pub fish: ugli::Program,
     pub obj: ugli::Program,
-    pub obj2: ugli::Program,
     pub edge: ugli::Program,
     pub wave: ugli::Program,
 }
@@ -142,6 +141,8 @@ pub struct Assets {
     pub music: geng::Sound,
     pub shops: ShopAssets,
     pub sounds: Sounds,
+    #[asset(load_with = "load_environment(&geng, &base_path.join(\"environment\"))")]
+    pub environment: EnvironmentAssets,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -196,6 +197,40 @@ fn load_fishes(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Vec<Fis
             .zip(list)
             .map(|(texture, config)| FishAssets { texture, config })
             .collect())
+    }
+    .boxed_local()
+}
+
+pub struct EnvironmentAssets {
+    pub land: Vec<ugli::Texture>,
+    pub shallow: Vec<ugli::Texture>,
+}
+
+fn load_environment(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<EnvironmentAssets> {
+    let geng = geng.clone();
+    let path = path.to_owned();
+    async move {
+        let json = <String as geng::LoadAsset>::load(&geng, &path.join("list.json")).await?;
+        let list: HashMap<String, Vec<String>> = serde_json::from_str(&json)?;
+        async fn load_textures(
+            geng: &Geng,
+            path: &std::path::Path,
+            names: &[String],
+        ) -> Vec<ugli::Texture> {
+            future::join_all(
+                names
+                    .iter()
+                    .map(|name| geng::LoadAsset::load(geng, &path.join(format!("{}.png", name)))),
+            )
+            .await
+            .into_iter()
+            .collect::<anyhow::Result<_>>()
+            .unwrap()
+        }
+        Ok(EnvironmentAssets {
+            land: load_textures(&geng, &path, &list["land"]).await,
+            shallow: load_textures(&geng, &path, &list["shallow"]).await,
+        })
     }
     .boxed_local()
 }

@@ -2,7 +2,7 @@ use super::*;
 
 const DEEPEST_DEPTH: f32 = -1.5;
 const HIGHEST_LAND: f32 = 0.5;
-const SIZE: f32 = 100.0;
+pub const SIZE: f32 = 100.0;
 pub const SHORE_HEIGHT: f32 = -0.2;
 
 pub struct MapGeometry {
