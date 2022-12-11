@@ -9,6 +9,7 @@ pub struct Shaders {
     pub obj: ugli::Program,
     pub obj2: ugli::Program,
     pub edge: ugli::Program,
+    pub wave: ugli::Program,
 }
 
 #[derive(geng::Assets, Serialize, Deserialize)]

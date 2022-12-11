@@ -15,6 +15,7 @@ pub mod obj;
 pub mod player;
 pub mod shops;
 pub mod sound;
+pub mod splash;
 pub mod util;
 
 pub use assets::*;
@@ -30,6 +31,7 @@ pub use obj::*;
 pub use player::*;
 pub use shops::*;
 pub use sound::*;
+pub use splash::*;
 pub use util::*;
 
 // TODO: write the unit tests
@@ -55,6 +57,7 @@ pub struct Game {
     hovered_inventory_slot: Option<usize>,
     money: u32,
     fishdex: HashSet<FishType>,
+    splashes: Vec<Splash>,
 }
 
 #[derive(Debug, Clone, HasId)]
@@ -126,6 +129,7 @@ impl Game {
             hovered_inventory_slot: None,
             money: 0,
             fishdex: HashSet::new(),
+            splashes: Vec::new(),
         }
     }
 
@@ -333,6 +337,7 @@ impl geng::State for Game {
             },
         );
 
+        self.draw_splashes(framebuffer);
         self.draw_inventory(framebuffer);
     }
 
@@ -426,6 +431,11 @@ impl geng::State for Game {
             }
         }
         self.caught_fish.retain(|fish| fish.lifetime < 1.0);
+
+        for splash in &mut self.splashes {
+            splash.lifetime += delta_time * 1.5;
+        }
+        self.splashes.retain(|splash| splash.lifetime < 1.0);
     }
 
     fn handle_event(&mut self, event: geng::Event) {

@@ -202,6 +202,7 @@ impl Game {
                         if Map::get().get_height(bobber_pos) < SHORE_HEIGHT {
                             self.player.fishing_state = FishingState::Waiting(bobber_pos);
                             sound_type = Some(SoundType::Splash);
+                            self.splashes.push(Splash::new(bobber_pos))
                         } else {
                             self.player.fishing_state = FishingState::Idle;
                         }
