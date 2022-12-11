@@ -154,6 +154,7 @@ pub enum FishBehavior {
     Idle,
     Space,
     Land,
+    Kuviseal,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

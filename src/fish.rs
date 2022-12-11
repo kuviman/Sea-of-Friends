@@ -94,6 +94,7 @@ impl Model {
         let dist = spawn_circle.center.sub(fish.pos.pos);
         match spawn_circle.behavior {
             FishBehavior::Idle => Vec2::ZERO,
+            FishBehavior::Kuviseal => dist,
             FishBehavior::Space => Vec2 {
                 x: time.cos(),
                 y: time.sin(),
@@ -162,7 +163,7 @@ impl Model {
 
             let behavior = &FishConfigs::get().configs[fish.index].spawn_circle.behavior;
             let v = match behavior {
-                FishBehavior::Space | FishBehavior::Land => {
+                FishBehavior::Space | FishBehavior::Land | FishBehavior::Kuviseal => {
                     // no boids in space!
                     v0
                 }
