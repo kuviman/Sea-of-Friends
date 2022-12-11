@@ -140,6 +140,8 @@ pub struct Assets {
     pub map_color: ugli::Texture,
     #[asset(path = "music.mp3", postprocess = "make_looped")]
     pub music: geng::Sound,
+    #[asset(path = "space_music.mp3", postprocess = "make_looped")]
+    pub space_music: geng::Sound,
     pub shops: ShopAssets,
     pub sounds: Sounds,
     #[asset(load_with = "load_environment(&geng, &base_path.join(\"environment\"))")]
