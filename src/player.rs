@@ -111,7 +111,7 @@ impl Game {
             let Some(pos) = self.interpolated.get(&player.id) else { continue };
             let pos = pos.get();
             effect.set_position(pos.pos.extend(0.0).map(|x| x as f64));
-            if Map::get().get_height(pos.pos) > 0.0 {
+            if player.seated.is_some() || Map::get().get_height(pos.pos) > 0.0 {
                 effect.set_volume(0.0);
             } else {
                 effect.set_volume(pos.vel.len() as f64 / 2.0);
