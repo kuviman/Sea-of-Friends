@@ -120,6 +120,10 @@ impl Game {
                     if other_player.seated.is_some() {
                         continue;
                     }
+                    let land = |pos| Map::get().get_height(pos) > SHORE_HEIGHT;
+                    if land(other_player.pos.pos) {
+                        continue;
+                    }
                     let Some(p) = self.interpolated.get(&other_player.id) else { continue };
                     let delta_pos = self.player.pos.pos - p.get().pos;
                     if delta_pos.len() < 2.0 * player_radius {
@@ -137,6 +141,7 @@ impl Game {
                     self.play_sound_for_everyone(self.player.pos.pos, SoundType::StopFishing);
                 }
             }
+            // collide with world edge
             if self.player.boat_level < 3 {
                 let to_edge = vec_to(&self.map_geometry.edge_segments, self.player.pos.pos);
                 if to_edge.len() < player_radius {
@@ -146,7 +151,7 @@ impl Game {
                     self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
                 }
             }
-            // if self.player.boat_level < 1 {
+            // collide with shore
             {
                 let to_shore = vec_to(&self.map_geometry.shore_segments, self.player.pos.pos);
                 let player_radius = if in_water { player_radius } else { 0.3 };
@@ -157,6 +162,7 @@ impl Game {
                     self.player.pos.vel -= n * Vec2::dot(n, self.player.pos.vel).min(0.0);
                 }
             }
+            // collide with deep sea boundary
             if self.player.boat_level < 2 {
                 let to_deep = vec_to(&self.map_geometry.deep_segments, self.player.pos.pos);
                 let player_radius = if in_water { player_radius } else { 0.3 };
