@@ -39,6 +39,7 @@ pub struct Seated {
 #[derive(HasId, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Player {
     pub id: Id,
+    pub name: String,
     pub pos: Position,
     pub fishing_state: FishingState,
     pub fish_in_hands: Option<FishType>,
@@ -52,6 +53,7 @@ impl Player {
     pub fn new(id: Id, pos: Vec2<f32>) -> Self {
         Self {
             id,
+            name: String::new(),
             pos: Position {
                 pos,
                 vel: Vec2::ZERO,
@@ -348,6 +350,23 @@ impl Game {
                 &self.assets.fishes[fish].texture,
                 vec2(0.0, -1.0),
             )
+        }
+
+        let ui_cam = geng::Camera2d {
+            center: Vec2::ZERO,
+            rotation: 0.0,
+            fov: self.camera.distance * 2.0,
+        };
+        if let Some(screen) = self
+            .camera
+            .world_to_screen(self.framebuffer_size, character_pos + vec3(0.0, 0.0, 1.0))
+        {
+            self.draw_text(
+                framebuffer,
+                &ui_cam,
+                &player.name,
+                ui_cam.screen_to_world(self.framebuffer_size, screen),
+            );
         }
     }
     fn draw_player(&self, framebuffer: &mut ugli::Framebuffer, player: &Player, pos: &Position) {

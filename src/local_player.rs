@@ -15,7 +15,11 @@ impl Game {
             player_radius *=
                 self.assets.config.boat_types[(self.player.boat_level - 1) as usize].scale;
         }
-        self.camera.pos = self.player.pos.pos.extend(0.0);
+        self.camera.pos = self
+            .player
+            .pos
+            .pos
+            .extend(Map::get().get_height(self.player.pos.pos).max(0.0) + 0.5);
         if let Some(seated) = self.player.seated {
             if let Some(other) = self.model.get().players.get(&seated.player) {
                 if let Some(pos) = self.interpolated.get(&other.id) {

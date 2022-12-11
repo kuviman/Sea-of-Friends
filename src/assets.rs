@@ -2,6 +2,7 @@ use super::*;
 
 #[derive(geng::Assets)]
 pub struct Shaders {
+    pub font: ugli::Program,
     pub water: ugli::Program,
     pub land: ugli::Program,
     pub land2: ugli::Program,

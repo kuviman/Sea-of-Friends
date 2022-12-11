@@ -5,7 +5,7 @@ impl Game {
         let camera = geng::Camera2d {
             center: Vec2::ZERO,
             rotation: 0.0,
-            fov: 20.0,
+            fov: 10.0,
         };
 
         for fish in &self.caught_fish {
@@ -104,30 +104,21 @@ impl Game {
             self.play_sound_for_everyone(self.player.pos.pos, SoundType::ShowFish);
         }
 
-        self.geng.draw_2d(
+        self.draw_text(
             framebuffer,
             &camera,
-            &draw_2d::Text::unit(
-                &**self.geng.default_font(),
-                format!("$ {}", self.money),
-                Rgba::BLACK,
-            )
-            .translate(vec2(0.0, camera.fov / 2.0 - 1.0)),
+            &format!("$ {}", self.money),
+            vec2(0.0, camera.fov / 2.0 - 1.0),
         );
-        self.geng.draw_2d(
+        self.draw_text(
             framebuffer,
             &camera,
-            &draw_2d::Text::unit(
-                &**self.geng.default_font(),
-                format!(
-                    "fishdex: {}/{}",
-                    self.fishdex.len(),
-                    self.assets.fishes.len(),
-                ),
-                Rgba::BLACK,
-            )
-            .scale_uniform(0.5)
-            .translate(vec2(10.0, camera.fov / 2.0 - 1.0)),
+            &format!(
+                "fishdex: {}/{}",
+                self.fishdex.len(),
+                self.assets.fishes.len(),
+            ),
+            vec2(5.0, camera.fov / 2.0 - 1.0),
         );
 
         if let Some((_, config)) = self.is_hovering_boat_shop() {
@@ -141,14 +132,70 @@ impl Game {
         if self.tutorial_timer < 0.0 {
             self.tutorial = "".to_owned();
         }
-        self.geng.default_font().draw(
-            framebuffer,
-            &camera,
-            &self.tutorial,
-            vec2(0.0, -camera.fov / 2.0 + 2.0),
-            geng::TextAlign::CENTER,
-            1.0,
-            Rgba::BLACK,
-        );
+        if self.editing_name {
+            self.draw_text(
+                framebuffer,
+                &camera,
+                "type your name and press Enter <3",
+                Vec2::ZERO,
+            );
+        } else {
+            self.draw_text(
+                framebuffer,
+                &camera,
+                &self.tutorial,
+                vec2(0.0, -camera.fov / 2.0 + 2.0),
+            );
+        }
+    }
+
+    pub fn draw_text(
+        &self,
+        framebuffer: &mut ugli::Framebuffer,
+        camera: &impl geng::AbstractCamera2d,
+        text: &str,
+        pos: Vec2<f32>,
+    ) {
+        if text.is_empty() {
+            return;
+        }
+        let mut pos = pos;
+        for text in text.lines() {
+            let font = self.geng.default_font();
+            let bb = font.measure_bounding_box(text).unwrap();
+            let mut line_pos = pos;
+            line_pos.x -= bb.width() / 2.0;
+            font.draw_with(text, |glyphs, atlas| {
+                ugli::draw(
+                    framebuffer,
+                    &self.assets.shaders.font,
+                    ugli::DrawMode::TriangleFan,
+                    ugli::instanced(
+                        &ugli::VertexBuffer::new_dynamic(
+                            self.geng.ugli(),
+                            AABB::point(Vec2::ZERO)
+                                .extend_positive(vec2(1.0, 1.0))
+                                .corners()
+                                .into_iter()
+                                .map(|v| draw_2d::Vertex { a_pos: v })
+                                .collect(),
+                        ),
+                        &ugli::VertexBuffer::new_dynamic(self.geng.ugli(), glyphs.to_vec()),
+                    ),
+                    (
+                        ugli::uniforms! {
+                            u_texture: atlas,
+                            u_pos: line_pos,
+                        },
+                        geng::camera2d_uniforms(camera, framebuffer.size().map(|x| x as f32)),
+                    ),
+                    ugli::DrawParameters {
+                        // blend_mode: Some(ugli::BlendMode::default()),
+                        ..default()
+                    },
+                );
+            });
+            pos.y -= 1.0;
+        }
     }
 }

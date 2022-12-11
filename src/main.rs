@@ -65,6 +65,8 @@ pub struct Game {
     tutorial_timer: f32,
     land_environment: Vec<ugli::VertexBuffer<ObjInstance>>,
     shallow_environment: Vec<ugli::VertexBuffer<ObjInstance>>,
+    editing_name: bool,
+    target_cam_distance: f32,
 }
 
 #[derive(Debug, Clone, HasId)]
@@ -124,6 +126,8 @@ impl Game {
             }
         }
         Self {
+            target_cam_distance: 20.0,
+            editing_name: true,
             land_environment,
             shallow_environment,
             player_id,
@@ -420,6 +424,13 @@ impl geng::State for Game {
         let delta_time = delta_time as f32;
 
         self.tutorial_timer -= delta_time;
+
+        if self.editing_name {
+            self.camera.distance = 5.0;
+        } else {
+            self.camera.distance +=
+                (self.target_cam_distance - self.camera.distance).clamp_abs(delta_time * 30.0);
+        }
 
         self.player.inventory = self.inventory.clone(); // NOICE
 
@@ -742,8 +753,24 @@ impl geng::State for Game {
                 }
             }
             geng::Event::Wheel { delta } => {
-                self.camera.distance =
-                    (self.camera.distance * 1.01f32.powf(-delta as f32)).clamp(1.0, 300.0);
+                self.target_cam_distance =
+                    (self.target_cam_distance * 1.005f32.powf(-delta as f32)).clamp(10.0, 30.0);
+            }
+            geng::Event::KeyDown { key } => {
+                if key == geng::Key::Enter {
+                    self.editing_name = !self.editing_name;
+                }
+                if self.editing_name {
+                    if key == geng::Key::Backspace {
+                        self.player.name.pop();
+                    }
+                    if self.player.name.len() < 15 {
+                        let s = format!("{key:?}");
+                        if s.len() == 1 {
+                            self.player.name.push_str(&s);
+                        }
+                    }
+                }
             }
             _ => {}
         }
