@@ -1,6 +1,7 @@
 varying vec2 v_uv;
 varying vec3 v_v;
 varying float v_height;
+varying mat4 v_model_matrix;
 // varying vec4 v_color;
 
 #ifdef VERTEX_SHADER
@@ -16,6 +17,7 @@ uniform mat4 u_view_matrix;
 
 void main() {
     v_height = i_height;
+    v_model_matrix = i_model_matrix;
     // v_color = i_color;
     v_uv = a_uv;
     v_v = a_v;
@@ -30,7 +32,7 @@ void main() {
     if (gl_FragColor.w < 0.5) {
         discard;
     }
-    if (v_height < 0.0) {
+    if (v_height < 0.0 && distance(vec3(0.0), v_model_matrix[3].xyz) < 100.0) {
         gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     }
 }

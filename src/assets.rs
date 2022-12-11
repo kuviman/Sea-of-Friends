@@ -141,11 +141,13 @@ pub struct Assets {
     pub sounds: Sounds,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum FishBehavior {
     Orbit,
     Chaos,
     Idle,
+    Space,
+    Land,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

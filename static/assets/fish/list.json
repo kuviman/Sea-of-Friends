@@ -22,10 +22,11 @@
                 -4.3396535,
                 6.787462
             ],
+            "inner_radius": 10.0,
             "radius": 15.0,
             "behavior": "Orbit"
         },
-        "count": 30
+        "count": 15
     },
     {
         "name": "Old Wife Fish",
@@ -40,7 +41,7 @@
             "behavior": "Orbit",
             "reversed": true
         },
-        "count": 20
+        "count": 15
     },
     {
         "name": "Mousefish",
@@ -68,10 +69,10 @@
             "radius": 30.0,
             "behavior": "Chaos"
         },
-        "count": 40
+        "count": 25
     },
     {
-        "name": "Spade Fish",
+        "name": "Honest panfish",
         "cost": 5,
         "size": 1,
         "spawn_circle": {
@@ -82,7 +83,7 @@
             "radius": 30.0,
             "behavior": "Chaos"
         },
-        "count": 40
+        "count": 20
     },
     {
         "name": "Snitch",
@@ -98,5 +99,62 @@
             "behavior": "Orbit"
         },
         "count": 2
+    },
+    {
+        "name": "Pandafish",
+        "cost": 25,
+        "size": 2.5,
+        "spawn_circle": {
+            "center": [
+                14.025569,
+                -61.893784
+            ],
+            "radius": 15.0,
+            "behavior": "Chaos"
+        },
+        "count": 8
+    },
+    {
+        "name": "Cthulu Fish",
+        "cost": 20,
+        "size": 1.2,
+        "spawn_circle": {
+            "center": [
+                51.441498,
+                -61.865936
+            ],
+            "radius": 8.0,
+            "behavior": "Orbit"
+        },
+        "count": 6
+    },
+    {
+        "name": "Bad carp",
+        "cost": 20,
+        "size": 1.2,
+        "spawn_circle": {
+            "center": [
+                8.096796,
+                64.16658
+            ],
+            "radius": 13.0,
+            "behavior": "Orbit"
+        },
+        "count": 9
+    },
+    {
+        "name": "Star Fish",
+        "cost": 20,
+        "size": 1.2,
+        "spawn_circle": {
+            "center": [
+                0.0,
+                0.0
+            ],
+            "inner_radius": 110.0,
+            "radius": 200.0,
+            "behavior": "Space"
+        },
+        "count": 100
     }
 ]

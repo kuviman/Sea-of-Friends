@@ -89,11 +89,19 @@ impl Model {
         Vec2::ZERO
     }
 
-    pub fn currents(fish: &Fish, delta_time: f32) -> Vec2<f32> {
+    pub fn currents(fish: &Fish, delta_time: f32, time: f32) -> Vec2<f32> {
         let spawn_circle = &FishConfigs::get().configs[fish.index].spawn_circle;
         let dist = spawn_circle.center.sub(fish.pos.pos);
         match spawn_circle.behavior {
             FishBehavior::Idle => Vec2::ZERO,
+            FishBehavior::Space => Vec2 {
+                x: time.cos(),
+                y: time.sin(),
+            },
+            FishBehavior::Land => Vec2 {
+                x: time.cos(),
+                y: 0.0,
+            },
             FishBehavior::Orbit => {
                 if let Some(rev) = &spawn_circle.reversed {
                     if *rev {
@@ -149,13 +157,20 @@ impl Model {
                         && f.index == fish.index
                 })
                 .collect();
+            let mut v = Vec2::ZERO;
+
+            let v0 = Self::currents(fish, delta_time, self.time);
             let v1 = Self::flock(fish, delta_time, &nearby_fish);
             let v2 = Self::avoid(fish, delta_time, &nearby_fish);
             let v3 = Self::match_velocity(fish, delta_time, &nearby_fish);
             let v4 = Self::congregate(fish, delta_time);
-            let v5 = Self::currents(fish, delta_time);
 
-            let v = v1 + v2 + v3 + v4 + v5;
+            if FishConfigs::get().configs[fish.index].spawn_circle.behavior == FishBehavior::Space {
+                // no boids in space!
+                v = v0;
+            } else {
+                v = v0 + v1 + v2 + v3 + v4;
+            }
             // let cur = Self::get_map_color(fish.pos.pos)[0];
             // if cur > 0 {
             //     if Self::get_map_color(

@@ -55,6 +55,7 @@ pub struct Model {
     pub players: Collection<Player>,
     #[diff = "clone"]
     pub fishes: Collection<Fish>,
+    pub time: f32,
 }
 
 impl Model {
@@ -64,6 +65,7 @@ impl Model {
             players: Collection::new(),
             fishes: Collection::new(),
             id_gen,
+            time: 0.0,
         };
         for i in 0..FishConfigs::get().configs.len() {
             result.spawn_fish(i);
@@ -180,6 +182,7 @@ impl simple_net::Model for Model {
 
     fn tick(&mut self, events: &mut Vec<Self::Event>) {
         let delta_time = 1.0 / Self::TICKS_PER_SECOND;
+        self.time += delta_time;
         self.update_fishes(delta_time, events);
     }
 }
