@@ -273,59 +273,64 @@ impl Model {
 impl Game {
     pub fn draw_fishes(&self, framebuffer: &mut ugli::Framebuffer) {
         let model = self.model.get();
+        #[derive(ugli::Vertex)]
+        struct FishInstance {
+            i_model_matrix: Mat4<f32>,
+            i_height: f32,
+        }
+        let mut instances = HashMap::<usize, Vec<FishInstance>>::new();
         for fish in &model.fishes {
             let Some(pos) = self.interpolated.get(&fish.id) else { continue };
             let pos = pos.get();
-            self.draw_fish(framebuffer, fish, &pos, -0.2);
+            let height = -0.2;
+            let texture = &self.assets.fishes[fish.index].texture;
+            let matrix = Mat4::translate(
+                // {
+                //     let mut pos = pos.pos;
+                //     for player in &self.model.get().players {
+                //         if let FishingState::Reeling {
+                //             fish: fish_id,
+                //             bobber_pos,
+                //         } = player.fishing_state
+                //         {
+                //             if fish_id == fish.id {
+                //                 pos = bobber_pos;
+                //             }
+                //         }
+                //     }
+                //     pos
+                // }
+                pos.pos.extend(height),
+            ) * Mat4::rotate_z(pos.rot + f32::PI)
+                * Mat4::scale(texture.size().map(|x| x as f32 / 500.0).extend(1.0))
+                * Mat4::rotate_x(f32::PI / 2.0);
+            instances.entry(fish.index).or_default().push(FishInstance {
+                i_model_matrix: matrix,
+                i_height: height,
+            });
         }
-    }
-    pub fn draw_fish(
-        &self,
-        framebuffer: &mut ugli::Framebuffer,
-        fish: &Fish,
-        pos: &Position,
-        height: f32,
-    ) {
-        let texture = &self.assets.fishes[fish.index].texture;
-        let matrix = Mat4::translate(
-            // {
-            //     let mut pos = pos.pos;
-            //     for player in &self.model.get().players {
-            //         if let FishingState::Reeling {
-            //             fish: fish_id,
-            //             bobber_pos,
-            //         } = player.fishing_state
-            //         {
-            //             if fish_id == fish.id {
-            //                 pos = bobber_pos;
-            //             }
-            //         }
-            //     }
-            //     pos
-            // }
-            pos.pos.extend(height),
-        ) * Mat4::rotate_z(pos.rot + f32::PI)
-            * Mat4::scale(texture.size().map(|x| x as f32 / 500.0).extend(1.0))
-            * Mat4::rotate_x(f32::PI / 2.0);
-        ugli::draw(
-            framebuffer,
-            &self.assets.shaders.fish,
-            ugli::DrawMode::TriangleFan,
-            &self.quad,
-            (
-                ugli::uniforms! {
-                    u_model_matrix: matrix,
-                    u_texture: texture,
-                    u_color: Rgba::WHITE,
-                    height: height,
+        for (index, instances) in instances {
+            let texture = &self.assets.fishes[index].texture;
+            ugli::draw(
+                framebuffer,
+                &self.assets.shaders.fish,
+                ugli::DrawMode::TriangleFan,
+                ugli::instanced(
+                    &self.quad,
+                    &ugli::VertexBuffer::new_dynamic(self.geng.ugli(), instances),
+                ),
+                (
+                    ugli::uniforms! {
+                        u_texture: texture,
+                    },
+                    geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
+                ),
+                ugli::DrawParameters {
+                    blend_mode: Some(ugli::BlendMode::default()),
+                    depth_func: Some(ugli::DepthFunc::Less),
+                    ..default()
                 },
-                geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
-            ),
-            ugli::DrawParameters {
-                blend_mode: Some(ugli::BlendMode::default()),
-                depth_func: Some(ugli::DepthFunc::Less),
-                ..default()
-            },
-        );
+            );
+        }
     }
 }
