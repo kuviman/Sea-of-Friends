@@ -733,7 +733,7 @@ impl geng::State for Game {
                         self.player_control = PlayerMovementControl::GoTo(pos);
                     }
                     geng::MouseButton::Middle => {
-                        self.player.pos.pos = pos;
+                        // self.player.pos.pos = pos;
                         println!("{}", pos)
                     }
                 }
