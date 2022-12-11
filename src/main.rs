@@ -585,12 +585,10 @@ impl geng::State for Game {
                                     let check_pos = from + segment * i as f32;
                                     if land(check_pos) && hit.is_none() {
                                         hit = Some(check_pos + segment * 2.0); // Add a little bit of buffer to the result
-                                        println!("Hit land at {}", check_pos);
                                     }
                                     // we passed clear through an island - invalidate the hit
                                     if !land(check_pos) && hit.is_some() {
                                         hit = None;
-                                        println!("Hit water at {}", check_pos);
                                     }
                                 }
                             } else {
