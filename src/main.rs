@@ -420,7 +420,7 @@ impl geng::State for Game {
 
         for fish in &mut self.caught_fish {
             fish.lifetime += delta_time;
-            if fish.lifetime >= 1.0 {
+            if fish.lifetime >= 1.0 && fish.player == self.player_id {
                 self.fishdex.insert(fish.index);
                 self.inventory.push(fish.index);
             }
