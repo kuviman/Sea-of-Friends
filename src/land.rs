@@ -153,7 +153,7 @@ pub fn create_map_geometry(geng: &Geng, assets: &Assets) -> MapGeometry {
             if a.1 > b.1 {
                 mem::swap(&mut a, &mut b);
             }
-            let mid = -1.0;
+            let mid = -1.25;
             if a.1 < mid && b.1 >= mid {
                 let t = (mid - a.1) / (b.1 - a.1);
                 let z = a.0 + t * (b.0 - a.0);
