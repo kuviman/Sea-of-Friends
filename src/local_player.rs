@@ -221,6 +221,8 @@ impl Game {
                                 } else {
                                     self.player.fishing_state =
                                         FishingState::Attached(other_player.id);
+                                    self.player_control =
+                                        PlayerMovementControl::GoDirection(Vec2::ZERO);
                                 }
                             }
                         }
