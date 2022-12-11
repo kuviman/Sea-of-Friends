@@ -98,6 +98,27 @@ impl Game {
             } else {
                 self.player_timings.remove(&player.id);
             }
+            let effect = self.boat_sound_effects.entry(player.id).or_insert_with(|| {
+                let mut effect = self.assets.sounds.boat_moving.effect();
+                effect.set_volume(0.0);
+                effect.set_max_distance(10.0);
+                effect.play();
+                effect
+            });
+
+            let Some(pos) = self.interpolated.get(&player.id) else { continue };
+            let pos = pos.get();
+            effect.set_position(pos.pos.extend(0.0).map(|x| x as f64));
+            if Map::get().get_height(pos.pos) > 0.0 {
+                effect.set_volume(0.0);
+            } else {
+                effect.set_volume(pos.vel.len() as f64 / 2.0);
+            }
+        }
+        for id in self.boat_sound_effects.keys().copied().collect::<Vec<_>>() {
+            if model.players.get(&id).is_none() {
+                self.boat_sound_effects.remove(&id).unwrap().stop();
+            }
         }
     }
     pub fn draw_players(&self, framebuffer: &mut ugli::Framebuffer) {

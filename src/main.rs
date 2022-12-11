@@ -55,6 +55,7 @@ pub struct Game {
     hovered_inventory_slot: Option<usize>,
     money: u32,
     fishdex: HashSet<FishType>,
+    boat_sound_effects: HashMap<Id, geng::SoundEffect>,
 }
 
 #[derive(Debug, Clone, HasId)]
@@ -126,6 +127,7 @@ impl Game {
             hovered_inventory_slot: None,
             money: 0,
             fishdex: HashSet::new(),
+            boat_sound_effects: HashMap::new(),
         }
     }
 
