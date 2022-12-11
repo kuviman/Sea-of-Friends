@@ -43,15 +43,13 @@ impl Game {
 
             let texture = &self.assets.fishes[fish.index].texture;
             let fish_card = draw_2d::TexturedQuad::new(
-                AABB::point(Vec2::ZERO).extend_symmetric(
-                    vec2(texture.size().x as f32 / texture.size().y as f32, 1.0) * 10.0,
-                ),
+                AABB::point(Vec2::ZERO)
+                    .extend_symmetric(vec2(texture.size().x as f32 / texture.size().y as f32, 1.0)),
                 texture,
             )
             .transform(Mat3::rotate(rot))
-            .translate(pos);
-            self.geng
-                .draw_2d(framebuffer, &geng::PixelPerfectCamera, &fish_card);
+            .translate(camera.screen_to_world(self.framebuffer_size, pos));
+            self.geng.draw_2d(framebuffer, &camera, &fish_card);
         }
 
         let size =
@@ -78,6 +76,7 @@ impl Game {
                 hovered = Some((index, texture, pos));
             }
         }
+        let last_hovered_inventory_slot = self.hovered_inventory_slot;
         self.hovered_inventory_slot = None;
         if let Some((index, texture, pos)) = hovered {
             self.hovered_inventory_slot = Some(index);
@@ -90,6 +89,9 @@ impl Game {
             .transform(Mat3::rotate(-f32::PI / 2.0))
             .translate(pos);
             self.geng.draw_2d(framebuffer, &camera, &fish_card);
+        }
+        if self.hovered_inventory_slot.is_some() && last_hovered_inventory_slot.is_none() {
+            self.play_sound_for_everyone(self.player.pos.pos, SoundType::ShowFish);
         }
 
         self.geng.draw_2d(

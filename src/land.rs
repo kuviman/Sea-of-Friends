@@ -153,7 +153,7 @@ pub fn create_map_geometry(geng: &Geng, assets: &Assets) -> MapGeometry {
             if a.1 > b.1 {
                 mem::swap(&mut a, &mut b);
             }
-            let mid = -1.0;
+            let mid = -1.25;
             if a.1 < mid && b.1 >= mid {
                 let t = (mid - a.1) / (b.1 - a.1);
                 let z = a.0 + t * (b.0 - a.0);
@@ -224,7 +224,7 @@ impl Map {
     pub fn get_height(&self, pos: Vec2<f32>) -> f32 {
         self.get_channel_value(0, pos) * (HIGHEST_LAND - DEEPEST_DEPTH) + DEEPEST_DEPTH
     }
-    fn get_channel_value(&self, channel: usize, pos: Vec2<f32>) -> f32 {
+    pub fn get_channel_value(&self, channel: usize, pos: Vec2<f32>) -> f32 {
         let uv = pos.map(|x| ((x + SIZE) / (2.0 * SIZE)) * self.image.width() as f32);
         let values: [[f32; 2]; 2] = std::array::from_fn(|dx| {
             std::array::from_fn(|dy| {

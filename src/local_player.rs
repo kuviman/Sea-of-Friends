@@ -22,6 +22,9 @@ impl Game {
                     self.camera.pos = pos.get().pos.extend(0.0);
                 }
                 self.player.pos.pos = other.pos.pos;
+                if Map::get().get_height(other.pos.pos) > SHORE_HEIGHT {
+                    self.player.seated = None;
+                }
             } else {
                 self.player.seated = None;
                 self.player.pos.pos = Vec2::ZERO;
@@ -199,11 +202,29 @@ impl Game {
                 match self.player.fishing_state {
                     FishingState::Casting(bobber_pos) => {
                         let mut sound_type = None;
-                        if Map::get().get_height(bobber_pos) < SHORE_HEIGHT {
+                        if Map::get().get_height(bobber_pos) < SHORE_HEIGHT
+                            && Map::get().get_channel_value(3, bobber_pos) > 0.5
+                        {
+                            // This is water
                             self.player.fishing_state = FishingState::Waiting(bobber_pos);
                             sound_type = Some(SoundType::Splash);
                             self.splashes.push(Splash::new(bobber_pos))
                         } else {
+                            // This is land/space
+                            // TODO: make this code self explanatory
+                            for fish in &self.model.get().fishes {
+                                if (fish.pos.pos - bobber_pos).len() < 1.0 {
+                                    self.caught_fish.insert(CaughtFish {
+                                        id: fish.id,
+                                        index: fish.index,
+                                        player: self.player_id,
+                                        lifetime: 0.0,
+                                        caught_at: fish.pos.pos,
+                                    });
+                                    self.model.send(Message::Catch(fish.id));
+                                    self.play_sound_for_everyone(fish.pos.pos, SoundType::Ding);
+                                }
+                            }
                             self.player.fishing_state = FishingState::Idle;
                         }
                         // TODO: make more comments
@@ -222,6 +243,8 @@ impl Game {
                                 } else {
                                     self.player.fishing_state =
                                         FishingState::Attached(other_player.id);
+                                    self.player_control =
+                                        PlayerMovementControl::GoDirection(Vec2::ZERO);
                                 }
                             }
                         }

@@ -58,6 +58,7 @@ pub struct Game {
     money: u32,
     fishdex: HashSet<FishType>,
     splashes: Vec<Splash>,
+    boat_sound_effects: HashMap<Id, geng::SoundEffect>,
 }
 
 #[derive(Debug, Clone, HasId)]
@@ -130,6 +131,7 @@ impl Game {
             money: 0,
             fishdex: HashSet::new(),
             splashes: Vec::new(),
+            boat_sound_effects: HashMap::new(),
         }
     }
 
@@ -344,6 +346,8 @@ impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
         let delta_time = delta_time as f32;
 
+        self.player.inventory = self.inventory.clone(); // NOICE
+
         self.geng
             .audio()
             .set_listener_position(self.player.pos.pos.extend(0.0).map(|x| x as f64));
@@ -460,7 +464,19 @@ impl geng::State for Game {
                                     .raw();
                                 if fishing_shop_distance < 2.0 {
                                     self.money += self.assets.fishes[fish].config.cost;
+                                    self.play_sound_for_everyone(
+                                        self.player.pos.pos,
+                                        SoundType::SellFish,
+                                    );
                                 } else {
+                                    self.play_sound_for_everyone(
+                                        self.player.pos.pos,
+                                        if Map::get().get_height(self.player.pos.pos) > 0.0 {
+                                            SoundType::DropFishLand
+                                        } else {
+                                            SoundType::DropFishWater
+                                        },
+                                    );
                                     self.model.send(Message::SpawnFish {
                                         index: fish,
                                         pos: self.player.pos.pos,
@@ -496,6 +512,10 @@ impl geng::State for Game {
                                     {
                                         self.money -= boat_type.cost;
                                         self.player.boat_level = boat_level;
+                                        self.play_sound_for_everyone(
+                                            self.player.pos.pos,
+                                            SoundType::UpgradeBoat,
+                                        );
                                     }
                                 }
                             }
@@ -581,6 +601,10 @@ impl geng::State for Game {
                                             player: other_player.id,
                                             seat,
                                         });
+                                        self.play_sound_for_everyone(
+                                            other_player.pos.pos,
+                                            SoundType::EnterBoat,
+                                        );
                                     }
                                 }
                             }
@@ -641,6 +665,14 @@ impl geng::State for Game {
                             }
                         }
                         if let Some(pos) = teleport {
+                            self.play_sound_for_everyone(
+                                pos,
+                                if land(pos) {
+                                    SoundType::ExitBoat
+                                } else {
+                                    SoundType::EnterBoat
+                                },
+                            );
                             self.player.pos.pos = pos;
                             self.player.pos.vel = Vec2::ZERO;
                         }
@@ -667,6 +699,9 @@ impl geng::State for Game {
                     }
                     geng::MouseButton::Right => {
                         // TODO: ask kuviman why we did this?
+                        // kuviman answers: because we had to
+                        // badcop answers: ok
+                        // why are we having a discussion in comments in source code
                         // self.player_control = PlayerMovementControl::GoDirection(Vec2::ZERO);
                     }
                     _ => {}
