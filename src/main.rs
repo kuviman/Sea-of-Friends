@@ -468,6 +468,7 @@ impl geng::State for Game {
                                         self.player.pos.pos,
                                         SoundType::SellFish,
                                     );
+                                    self.model.send(Message::RespawnFish { index: fish });
                                 } else {
                                     self.play_sound_for_everyone(
                                         self.player.pos.pos,

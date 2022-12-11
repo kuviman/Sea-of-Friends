@@ -59,33 +59,35 @@ pub struct Model {
 
 impl Model {
     pub fn init() -> Self {
-        let mut id_gen = IdGen::new();
-        Self {
+        let id_gen = IdGen::new();
+        let mut result = Self {
             players: Collection::new(),
-            fishes: {
-                let mut fishes = Collection::new();
-                for i in 0..FishConfigs::get().configs.len() {
-                    let fish_config = &FishConfigs::get().configs[i];
-                    for j in 0..fish_config.count {
-                        let mut inner_radius: f32 = 0.0;
-                        let radius = fish_config.spawn_circle.radius;
-                        let center = fish_config.spawn_circle.center;
-                        if let Some(r) = fish_config.spawn_circle.inner_radius {
-                            inner_radius = r;
-                        }
-                        // polar coordinates because we're fancy
-                        let r = global_rng().gen_range(inner_radius..radius);
-                        let angle = global_rng().gen_range(0.0..(f32::PI * 2.0));
-                        fishes.insert(Fish::new(
-                            id_gen.gen(),
-                            i,
-                            vec2(center.x + r * angle.cos(), center.y + r * angle.sin()),
-                        ))
-                    }
-                }
-                fishes
-            },
+            fishes: Collection::new(),
             id_gen,
+        };
+        for i in 0..FishConfigs::get().configs.len() {
+            result.spawn_fish(i);
+        }
+        result
+    }
+
+    pub fn spawn_fish(&mut self, i: usize) {
+        let fish_config = &FishConfigs::get().configs[i];
+        for j in 0..fish_config.count {
+            let mut inner_radius: f32 = 0.0;
+            let radius = fish_config.spawn_circle.radius;
+            let center = fish_config.spawn_circle.center;
+            if let Some(r) = fish_config.spawn_circle.inner_radius {
+                inner_radius = r;
+            }
+            // polar coordinates because we're fancy
+            let r = global_rng().gen_range(inner_radius..radius);
+            let angle = global_rng().gen_range(0.0..(f32::PI * 2.0));
+            self.fishes.insert(Fish::new(
+                self.id_gen.gen(),
+                i,
+                vec2(center.x + r * angle.cos(), center.y + r * angle.sin()),
+            ))
         }
     }
 }
@@ -97,6 +99,7 @@ pub enum Message {
     Catch(Id),
     SpawnFish { index: usize, pos: Vec2<f32> },
     Broadcast(Event),
+    RespawnFish { index: usize },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -131,6 +134,11 @@ impl simple_net::Model for Model {
     }
 
     fn drop_player(&mut self, events: &mut Vec<Self::Event>, player_id: &Self::PlayerId) {
+        if let Some(p) = self.players.get(player_id) {
+            for fish in p.inventory.clone() {
+                self.spawn_fish(fish);
+            }
+        }
         self.players.remove(player_id);
     }
 
@@ -162,6 +170,9 @@ impl simple_net::Model for Model {
             }
             Message::Broadcast(event) => {
                 events.push(event);
+            }
+            Message::RespawnFish { index } => {
+                self.spawn_fish(index);
             }
         }
         vec![]
