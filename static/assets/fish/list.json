@@ -191,13 +191,13 @@
         "size": 2.0,
         "spawn_circle": {
             "center": [
-                42.53176,
-                -31.869118
+                43.062332,
+                -32.28196
             ],
-            "radius": 9.0,
+            "radius": 2.0,
             "behavior": "Idle"
         },
-        "count": 2
+        "count": 1
     },
     {
         "name": "Potionseller",

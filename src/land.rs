@@ -204,6 +204,7 @@ pub fn vec_to(segments: &[[Vec2<f32>; 2]], point: Vec2<f32>) -> Vec2<f32> {
 
 pub struct Map {
     image: image::RgbaImage,
+    image_color: image::RgbaImage,
 }
 
 static mut MAP: Option<Map> = None;
@@ -219,7 +220,13 @@ impl Map {
         )
         .unwrap()
         .into_rgba8();
-        Self { image }
+        let image_color = image::load(
+            std::io::Cursor::new(include_bytes!("../static/assets/map_color.png")),
+            image::ImageFormat::Png,
+        )
+        .unwrap()
+        .into_rgba8();
+        Self { image, image_color }
     }
     pub fn get_dimensions(&self) -> (u32, u32) {
         self.image.dimensions()
@@ -230,6 +237,12 @@ impl Map {
     pub fn get_is_void(&self, pos: Vec2<f32>) -> bool {
         self.get_channel_value(3, pos) < 0.9
     }
+    pub fn is_ice(&self, pos: Vec2<f32>) -> bool {
+        let uv = pos.map(|x| ((x + SIZE) / (2.0 * SIZE)) * self.image_color.width() as f32);
+        let color = self.get_pixel_color(uv.map(|x| x.floor() as i32));
+        color.0[2] > color.0[0]
+    }
+
     pub fn get_channel_value(&self, channel: usize, pos: Vec2<f32>) -> f32 {
         let uv = pos.map(|x| ((x + SIZE) / (2.0 * SIZE)) * self.image.width() as f32);
         let values: [[f32; 2]; 2] = std::array::from_fn(|dx| {
@@ -254,6 +267,13 @@ impl Map {
             pos.x.clamp(0, self.image.width() as i32 - 1) as u32,
             (self.image.height() as i32 - pos.y - 1).clamp(0, self.image.height() as i32 - 1)
                 as u32,
+        )
+    }
+    fn get_pixel_color(&self, pos: Vec2<i32>) -> image::Rgba<u8> {
+        *self.image_color.get_pixel(
+            pos.x.clamp(0, self.image_color.width() as i32 - 1) as u32,
+            (self.image_color.height() as i32 - pos.y - 1)
+                .clamp(0, self.image_color.height() as i32 - 1) as u32,
         )
     }
 }

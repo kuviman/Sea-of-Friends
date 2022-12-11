@@ -119,6 +119,9 @@ impl Game {
                             x: 100.0 * (x as f32 / w as f32 * 2.0 - 1.0),
                             y: 100.0 * (y as f32 / h as f32 * 2.0 - 1.0),
                         };
+                        if Map::get().get_is_void(pos) || Map::get().is_ice(pos) {
+                            continue;
+                        }
                         let weight = pixel_value as u32 - 220;
                         let rng_choice = rng.gen_range(0..8500);
                         if rng_choice < 8500 - weight {
@@ -140,7 +143,7 @@ impl Game {
                         trees_environment[idx].push(ObjInstance {
                             i_model_matrix: Mat4::translate(pos.extend(height))
                                 * Mat4::scale({
-                                    let s = texture.size().map(|x| x as f32) * 0.0018;
+                                    let s = texture.size().map(|x| x as f32) * 0.0012;
                                     vec3(
                                         (s.x + 0.04 * weight as f32) * flip_scale,
                                         1.0,
@@ -155,7 +158,7 @@ impl Game {
             for _ in 0..10000 {
                 let pos = vec2(rng.gen_range(-SIZE..SIZE), rng.gen_range(-SIZE..SIZE));
                 let height = Map::get().get_height(pos);
-                if Map::get().get_is_void(pos) {
+                if Map::get().get_is_void(pos) || Map::get().is_ice(pos) {
                     continue;
                 }
                 if height > 0.0 {
