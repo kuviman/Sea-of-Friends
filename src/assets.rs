@@ -203,6 +203,7 @@ fn load_fishes(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<Vec<Fis
 }
 
 pub struct EnvironmentAssets {
+    pub trees: Vec<ugli::Texture>,
     pub land: Vec<ugli::Texture>,
     pub shallow: Vec<ugli::Texture>,
 }
@@ -229,6 +230,7 @@ fn load_environment(geng: &Geng, path: &std::path::Path) -> geng::AssetFuture<En
             .unwrap()
         }
         Ok(EnvironmentAssets {
+            trees: load_textures(&geng, &path, &list["trees"]).await,
             land: load_textures(&geng, &path, &list["land"]).await,
             shallow: load_textures(&geng, &path, &list["shallow"]).await,
         })

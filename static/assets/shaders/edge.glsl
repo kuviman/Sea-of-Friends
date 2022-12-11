@@ -73,5 +73,19 @@ void main() {
     // streaks
     gl_FragColor = mix(gl_FragColor, vec4(1.0), clamp(pow(streaks2, 50.0), 0.0, 0.9));
     // gl_FragColor = vec4(surfaceNoiseSample);
+
+	// fade to black
+	// gl_FragColor = mix(gl_FragColor, vec4(0.0, 0.0, 0.0, 1.0), clamp(pow(v_uv.y - 1.9, 3.0), 0.0, 1.0));
+
+	// bottom foam
+    surfaceNoiseCutoff = clamp(2.0 - v_uv.y, 0.0, 1.0);
+	
+	noise_uv = vec2(
+		(v_uv.x * 5.0 + u_time * surface_noise_scroll.x), 
+		(v_uv.y / 2.0 - u_time * surface_noise_scroll.y)
+	);
+	surfaceNoiseSample = texture2D(surfaceNoise, noise_uv).r;
+	surfaceNoiseAmount = smoothstep(surfaceNoiseCutoff - SMOOTHSTEP_AA, surfaceNoiseCutoff + SMOOTHSTEP_AA, surfaceNoiseSample);
+	gl_FragColor = mix(gl_FragColor, vec4(1.0,0.0,0.0,0.0), surfaceNoiseAmount);
 }
 #endif

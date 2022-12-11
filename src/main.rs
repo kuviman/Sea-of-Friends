@@ -65,6 +65,7 @@ pub struct Game {
     tutorial: String,
     tutorial_timer: f32,
     land_environment: Vec<ugli::VertexBuffer<ObjInstance>>,
+    trees_environment: Vec<ugli::VertexBuffer<ObjInstance>>,
     shallow_environment: Vec<ugli::VertexBuffer<ObjInstance>>,
     editing_name: bool,
     target_cam_distance: f32,
@@ -92,6 +93,10 @@ impl Game {
             (0..assets.environment.land.len())
                 .map(|_| ugli::VertexBuffer::new_static(geng.ugli(), vec![]))
                 .collect();
+        let mut trees_environment: Vec<ugli::VertexBuffer<ObjInstance>> =
+            (0..assets.environment.trees.len())
+                .map(|_| ugli::VertexBuffer::new_static(geng.ugli(), vec![]))
+                .collect();
         let mut shallow_environment: Vec<ugli::VertexBuffer<ObjInstance>> =
             (0..assets.environment.shallow.len())
                 .map(|_| ugli::VertexBuffer::new_static(geng.ugli(), vec![]))
@@ -99,9 +104,59 @@ impl Game {
         {
             // Generate the environment
             let mut rng = StdRng::seed_from_u64(1234);
+            let (w, h) = Map::get().get_dimensions();
+            for x in 0..w {
+                for y in 0..h {
+                    let pixel_value = Map::get()
+                        .get_pixel(Vec2 {
+                            x: x as i32,
+                            y: y as i32,
+                        })
+                        .0[0];
+                    if pixel_value > 220 {
+                        let mut pos = Vec2 {
+                            x: 100.0 * (x as f32 / w as f32 * 2.0 - 1.0),
+                            y: 100.0 * (y as f32 / h as f32 * 2.0 - 1.0),
+                        };
+                        let weight = pixel_value as u32 - 220;
+                        let rng_choice = rng.gen_range(0..8500);
+                        if rng_choice < 8500 - weight {
+                            continue;
+                        }
+                        pos.y += rng_choice as f32 * 0.00005;
+                        let height = Map::get().get_height(pos);
+                        let mut big_tree = rng.gen_range(0..40);
+                        if pos.len() < 20.0 {
+                            big_tree = 10;
+                        }
+                        let mut idx = rng.gen_range(1..assets.environment.trees.len());
+                        let flip = rng.gen_range(0..=1);
+                        let flip_scale = if flip == 0 { 1.0 } else { -1.0 };
+                        if big_tree == 0 {
+                            idx = 0;
+                        }
+                        let texture = &assets.environment.trees[idx];
+                        trees_environment[idx].push(ObjInstance {
+                            i_model_matrix: Mat4::translate(pos.extend(height))
+                                * Mat4::scale({
+                                    let s = texture.size().map(|x| x as f32) * 0.0018;
+                                    vec3(
+                                        (s.x + 0.04 * weight as f32) * flip_scale,
+                                        1.0,
+                                        s.y + 0.04 * weight as f32,
+                                    )
+                                })
+                                * Mat4::translate(vec3(0.0, 0.0, 1.0)),
+                        });
+                    }
+                }
+            }
             for _ in 0..10000 {
                 let pos = vec2(rng.gen_range(-SIZE..SIZE), rng.gen_range(-SIZE..SIZE));
                 let height = Map::get().get_height(pos);
+                if Map::get().get_is_void(pos) {
+                    continue;
+                }
                 if height > 0.0 {
                     let idx = rng.gen_range(0..assets.environment.land.len());
                     let texture = &assets.environment.land[idx];
@@ -131,6 +186,7 @@ impl Game {
             show_reel_tutorial: true,
             target_cam_distance: 20.0,
             editing_name: true,
+            trees_environment,
             land_environment,
             shallow_environment,
             player_id,
@@ -254,6 +310,26 @@ impl Game {
     }
 
     pub fn draw_environment(&self, framebuffer: &mut ugli::Framebuffer) {
+        for (index, instances) in self.trees_environment.iter().enumerate() {
+            ugli::draw(
+                framebuffer,
+                &self.assets.shaders.obj,
+                ugli::DrawMode::TriangleFan,
+                ugli::instanced(&self.quad, instances),
+                (
+                    ugli::uniforms! {
+                        u_color: Rgba::WHITE,
+                        u_texture: &self.assets.environment.trees[index],
+                    },
+                    geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
+                ),
+                ugli::DrawParameters {
+                    // blend_mode: Some(ugli::BlendMode::default()),
+                    depth_func: Some(ugli::DepthFunc::LessOrEqual),
+                    ..default()
+                },
+            );
+        }
         for (index, instances) in self.land_environment.iter().enumerate() {
             ugli::draw(
                 framebuffer,
@@ -374,6 +450,7 @@ impl geng::State for Game {
                 ),
                 ugli::DrawParameters {
                     depth_func: Some(ugli::DepthFunc::Less),
+
                     ..default()
                 },
             );
@@ -416,6 +493,7 @@ impl geng::State for Game {
             ),
             ugli::DrawParameters {
                 depth_func: Some(ugli::DepthFunc::Less),
+                blend_mode: Some(ugli::BlendMode::default()),
                 ..default()
             },
         );

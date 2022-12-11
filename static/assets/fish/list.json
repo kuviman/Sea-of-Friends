@@ -87,15 +87,15 @@
     },
     {
         "name": "Snitch",
-        "cost": 50,
+        "cost": 150,
         "size": 0.8,
         "spawn_circle": {
             "center": [
                 0.0,
                 0.0
             ],
-            "inner_radius": 90.0,
-            "radius": 95.0,
+            "inner_radius": 91.0,
+            "radius": 94.0,
             "behavior": "Orbit"
         },
         "count": 2
@@ -144,18 +144,18 @@
     },
     {
         "name": "Star",
-        "cost": 20,
+        "cost": 1000,
         "size": 1.2,
         "spawn_circle": {
             "center": [
                 0.0,
                 0.0
             ],
-            "inner_radius": 120.0,
-            "radius": 200.0,
+            "inner_radius": 110.0,
+            "radius": 160.0,
             "behavior": "Space"
         },
-        "count": 100
+        "count": 50
     },
     {
         "name": "Mykkyn crab",
@@ -169,7 +169,7 @@
             "radius": 6.5,
             "behavior": "Land"
         },
-        "count": 10
+        "count": 6
     },
     {
         "name": "Crab",

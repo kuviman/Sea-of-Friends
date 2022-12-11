@@ -221,8 +221,14 @@ impl Map {
         .into_rgba8();
         Self { image }
     }
+    pub fn get_dimensions(&self) -> (u32, u32) {
+        self.image.dimensions()
+    }
     pub fn get_height(&self, pos: Vec2<f32>) -> f32 {
         self.get_channel_value(0, pos) * (HIGHEST_LAND - DEEPEST_DEPTH) + DEEPEST_DEPTH
+    }
+    pub fn get_is_void(&self, pos: Vec2<f32>) -> bool {
+        self.get_channel_value(3, pos) < 0.9
     }
     pub fn get_channel_value(&self, channel: usize, pos: Vec2<f32>) -> f32 {
         let uv = pos.map(|x| ((x + SIZE) / (2.0 * SIZE)) * self.image.width() as f32);
@@ -243,7 +249,7 @@ impl Map {
             pos.x,
         )
     }
-    fn get_pixel(&self, pos: Vec2<i32>) -> image::Rgba<u8> {
+    pub fn get_pixel(&self, pos: Vec2<i32>) -> image::Rgba<u8> {
         *self.image.get_pixel(
             pos.x.clamp(0, self.image.width() as i32 - 1) as u32,
             (self.image.height() as i32 - pos.y - 1).clamp(0, self.image.height() as i32 - 1)
