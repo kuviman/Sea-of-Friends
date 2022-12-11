@@ -188,12 +188,17 @@ impl Model {
                 fish.pos.w = 0.0;
                 continue;
             }
+            let max_speed = if Map::get().get_height(fish.pos.pos) < 0.0 {
+                1000.0
+            } else {
+                0.5
+            };
             if fish.scared {
                 update_movement(
                     &mut fish.pos,
                     fish.target_pos,
                     MovementProps {
-                        max_speed: 3.0,
+                        max_speed: 3.0f32.min(max_speed),
                         max_rotation_speed: 5.0,
                         angular_acceleration: 10.0,
                         acceleration: 3.0,
@@ -245,7 +250,7 @@ impl Model {
                     &mut fish.pos,
                     target_pos,
                     MovementProps {
-                        max_speed: 2.0,
+                        max_speed: 2.0f32.min(max_speed),
                         max_rotation_speed: 2.0,
                         angular_acceleration: 1.0,
                         acceleration: 1.0,
@@ -270,6 +275,14 @@ impl Model {
     }
 }
 
+fn easy_in_out_quad(x: f32) -> f32 {
+    if x < 0.5 {
+        2.0 * x * x
+    } else {
+        1.0 - (-2.0 * x + 2.0).powf(2.0) / 2.0
+    }
+}
+
 impl Game {
     pub fn draw_fishes(&self, framebuffer: &mut ugli::Framebuffer) {
         let model = self.model.get();
@@ -282,7 +295,13 @@ impl Game {
         for fish in &model.fishes {
             let Some(pos) = self.interpolated.get(&fish.id) else { continue };
             let pos = pos.get();
-            let height = -0.2;
+            let mut height = Map::get().get_height(pos.pos).max(-0.2);
+            let mut rot_y = 0.0;
+            if height > 0.0 {
+                let t = self.time + fish.id.0 as f32 * 0.12345;
+                height += (t * f32::PI * 2.0).sin().abs() * 0.5 + 0.1;
+                rot_y = easy_in_out_quad((t.fract() - 0.5).abs() * 2.0) * f32::PI;
+            }
             let texture = &self.assets.fishes[fish.index].texture;
             let matrix = Mat4::translate(
                 // {
@@ -302,6 +321,7 @@ impl Game {
                 // }
                 pos.pos.extend(height),
             ) * Mat4::rotate_z(pos.rot + f32::PI)
+                * Mat4::rotate_y(rot_y)
                 * Mat4::scale(texture.size().map(|x| x as f32 / 500.0).extend(1.0))
                 * Mat4::rotate_x(f32::PI / 2.0);
             instances.entry(fish.index).or_default().push(FishInstance {
