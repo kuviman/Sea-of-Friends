@@ -184,5 +184,132 @@
             "behavior": "Land"
         },
         "count": 7
+    },
+    {
+        "name": "Kuviseal",
+        "cost": 500,
+        "size": 2.0,
+        "spawn_circle": {
+            "center": [
+                42.53176,
+                -31.869118
+            ],
+            "radius": 9.0,
+            "behavior": "Idle"
+        },
+        "count": 2
+    },
+    {
+        "name": "Potionseller",
+        "cost": 250,
+        "size": 2.0,
+        "spawn_circle": {
+            "center": [
+                60.16005,
+                54.302338
+            ],
+            "radius": 0.25,
+            "behavior": "Idle"
+        },
+        "count": 1
+    },
+    {
+        "name": "Elyzard",
+        "cost": 200,
+        "size": 3.0,
+        "spawn_circle": {
+            "center": [
+                -39.70827,
+                72.17111
+            ],
+            "inner_radius": 4.8,
+            "radius": 6.0,
+            "behavior": "Orbit"
+        },
+        "count": 3
+    },
+    {
+        "name": "Brainfish",
+        "cost": 80,
+        "size": 2.0,
+        "spawn_circle": {
+            "center": [
+                41.699135,
+                43.507072
+            ],
+            "radius": 9.0,
+            "behavior": "Chaos"
+        },
+        "count": 6
+    },
+    {
+        "name": "Pomothefish",
+        "cost": 70,
+        "size": 2.0,
+        "spawn_circle": {
+            "center": [
+                35.359253,
+                11.106468
+            ],
+            "radius": 10.0,
+            "behavior": "Chaos"
+        },
+        "count": 4
+    },
+    {
+        "name": "Davychick",
+        "cost": 50,
+        "size": 1.0,
+        "spawn_circle": {
+            "center": [
+                -8.740017,
+                -83.86184
+            ],
+            "radius": 5.0,
+            "behavior": "Idle"
+        },
+        "count": 7
+    },
+    {
+        "name": "Honest elephant",
+        "cost": 80,
+        "size": 2.0,
+        "spawn_circle": {
+            "center": [
+                -36.682373,
+                -79.92816
+            ],
+            "radius": 3.0,
+            "behavior": "Idle"
+        },
+        "count": 4
+    },
+    {
+        "name": "Strincsfish",
+        "cost": 42,
+        "size": 2.0,
+        "spawn_circle": {
+            "center": [
+                -79.93678,
+                4.8440857
+            ],
+            "radius": 11.0,
+            "behavior": "Chaos"
+        },
+        "count": 6
+    },
+    {
+        "name": "Water Caterpillar",
+        "cost": 60,
+        "size": 1.5,
+        "spawn_circle": {
+            "center": [
+                73.70909,
+                -18.133621
+            ],
+            "radius": 6.0,
+            "behavior": "Idle"
+        },
+        "count": 4
     }
 ]
