@@ -9,7 +9,7 @@ impl Game {
         };
 
         for fish in &self.caught_fish {
-            let (pos, rot) = if fish.player == self.player_id {
+            let (pos, rot, scale) = if fish.player == self.player_id {
                 // Fly to the inventory
                 let Some(pos) = self.camera.world_to_screen(
                         framebuffer.size().map(|x| x as f32),
@@ -21,7 +21,7 @@ impl Game {
                 let height_parameter = 3.0;
                 let height = pos.y * (0.0 - t) * (height_parameter * (t - 1.0) - 1.0);
                 let rot = self.time.sin() + t * 3.0;
-                (vec2(t * pos.x + offset, height), rot)
+                (vec2(t * pos.x + offset, height), rot, 1.0)
             } else {
                 // Fly to the player
                 let Some(target) = self.interpolated.get(&fish.player) else { continue; };
@@ -38,13 +38,14 @@ impl Game {
                     continue;
                 };
                 let rot = self.time.sin() + t * 3.0;
-                (pos, rot)
+                (pos, rot, 0.3)
             };
 
             let texture = &self.assets.fishes[fish.index].texture;
             let fish_card = draw_2d::TexturedQuad::new(
-                AABB::point(Vec2::ZERO)
-                    .extend_symmetric(vec2(texture.size().x as f32 / texture.size().y as f32, 1.0)),
+                AABB::point(Vec2::ZERO).extend_symmetric(
+                    vec2(texture.size().x as f32 / texture.size().y as f32, 1.0) * scale,
+                ),
                 texture,
             )
             .transform(Mat3::rotate(rot))
