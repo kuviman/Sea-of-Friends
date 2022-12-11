@@ -9,6 +9,7 @@
     ],
     "boat_types": [
         {
+            "name": "row boat",
             "cost": 0,
             "scale": 0.7,
             "shops": [
@@ -19,6 +20,7 @@
             ]
         },
         {
+            "name": "big ship",
             "cost": 0,
             "scale": 2,
             "shops": [
@@ -29,6 +31,7 @@
             ]
         },
         {
+            "name": "airship",
             "cost": 0,
             "scale": 3,
             "shops": [

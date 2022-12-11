@@ -80,6 +80,16 @@ impl Game {
         self.hovered_inventory_slot = None;
         if let Some((index, texture, pos)) = hovered {
             self.hovered_inventory_slot = Some(index);
+            let fish = &self.assets.fishes[self.inventory[index]];
+            self.main_tutorial = if self.can_sell_fish() {
+                format!(
+                    "click to sell {} for ${}",
+                    fish.config.name, fish.config.cost,
+                )
+            } else {
+                format!("click to release {}", fish.config.name)
+            };
+            self.main_tutorial_timer = 0.1;
             let fish_card = draw_2d::TexturedQuad::new(
                 AABB::point(Vec2::ZERO).extend_symmetric(
                     vec2(texture.size().x as f32 / texture.size().y as f32, 1.0) * 1.5,
@@ -100,7 +110,7 @@ impl Game {
             &draw_2d::Text::unit(
                 &**self.geng.default_font(),
                 format!("$ {}", self.money),
-                Rgba::WHITE,
+                Rgba::BLACK,
             )
             .translate(vec2(0.0, camera.fov / 2.0 - 1.0)),
         );
@@ -114,10 +124,26 @@ impl Game {
                     self.fishdex.len(),
                     self.assets.fishes.len(),
                 ),
-                Rgba::WHITE,
+                Rgba::BLACK,
             )
             .scale_uniform(0.5)
             .translate(vec2(10.0, camera.fov / 2.0 - 1.0)),
         );
+
+        if let Some((_, config)) = self.is_hovering_boat_shop() {
+            self.main_tutorial = format!("click to buy {} for ${}", config.name, config.cost);
+            self.main_tutorial_timer = 0.1;
+        }
+        if self.main_tutorial_timer > 0.0 {
+            self.geng.default_font().draw(
+                framebuffer,
+                &camera,
+                &self.main_tutorial,
+                vec2(0.0, -camera.fov / 2.0 + 2.0),
+                geng::TextAlign::CENTER,
+                1.0,
+                Rgba::BLACK,
+            );
+        }
     }
 }

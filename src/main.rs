@@ -34,6 +34,8 @@ pub use sound::*;
 pub use splash::*;
 pub use util::*;
 
+pub const SHOPPING_DISTANCE: f32 = 2.0;
+
 // TODO: write the unit tests
 pub struct Game {
     player_id: Id,
@@ -59,6 +61,8 @@ pub struct Game {
     fishdex: HashSet<FishType>,
     splashes: Vec<Splash>,
     boat_sound_effects: HashMap<Id, geng::SoundEffect>,
+    main_tutorial: String,
+    main_tutorial_timer: f32,
 }
 
 #[derive(Debug, Clone, HasId)]
@@ -132,6 +136,8 @@ impl Game {
             fishdex: HashSet::new(),
             splashes: Vec::new(),
             boat_sound_effects: HashMap::new(),
+            main_tutorial: "".to_owned(),
+            main_tutorial_timer: 0.0,
         }
     }
 
@@ -156,7 +162,7 @@ impl Game {
                 geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
             ),
             ugli::DrawParameters {
-                blend_mode: Some(ugli::BlendMode::default()),
+                // blend_mode: Some(ugli::BlendMode::default()),
                 depth_func: Some(ugli::DepthFunc::LessOrEqual),
                 ..default()
             },
@@ -346,6 +352,8 @@ impl geng::State for Game {
     fn update(&mut self, delta_time: f64) {
         let delta_time = delta_time as f32;
 
+        self.main_tutorial_timer -= delta_time;
+
         self.player.inventory = self.inventory.clone(); // NOICE
 
         self.geng
@@ -453,16 +461,7 @@ impl geng::State for Game {
                             can_fish = false;
                             if index < self.inventory.len() {
                                 let fish = self.inventory.remove(index);
-                                let fishing_shop_distance = self
-                                    .assets
-                                    .config
-                                    .fish_shops
-                                    .iter()
-                                    .map(|&pos| r32((pos - self.player.pos.pos).len()))
-                                    .min()
-                                    .unwrap()
-                                    .raw();
-                                if fishing_shop_distance < 2.0 {
+                                if self.can_sell_fish() {
                                     self.money += self.assets.fishes[fish].config.cost;
                                     self.play_sound_for_everyone(
                                         self.player.pos.pos,
@@ -485,40 +484,16 @@ impl geng::State for Game {
                                 }
                             }
                         }
-                        {
-                            for (index, boat_type) in
-                                self.assets.config.boat_types.iter().enumerate()
-                            {
-                                let boat_level = index as u8 + 1;
-                                if let Some(distance) = boat_type
-                                    .shops
-                                    .iter()
-                                    .filter(|&&pos| {
-                                        let pos = pos.extend(Map::get().get_height(pos));
-                                        let ray = self.camera.pixel_ray(
-                                            self.framebuffer_size,
-                                            self.geng.window().mouse_pos().map(|x| x as f32),
-                                        );
-                                        Vec3::cross(ray.dir.normalize_or_zero(), pos - ray.from)
-                                            .len()
-                                            < 1.0
-                                    })
-                                    .map(|&pos| r32((pos - self.player.pos.pos).len()))
-                                    .min()
-                                {
-                                    can_fish = false;
-                                    if distance.raw() < 2.0
-                                        && self.money >= boat_type.cost
-                                        && self.player.boat_level < boat_level
-                                    {
-                                        self.money -= boat_type.cost;
-                                        self.player.boat_level = boat_level;
-                                        self.play_sound_for_everyone(
-                                            self.player.pos.pos,
-                                            SoundType::UpgradeBoat,
-                                        );
-                                    }
-                                }
+                        if let Some((index, boat_type)) = self.is_hovering_boat_shop() {
+                            let boat_level = index as u8 + 1;
+                            can_fish = false;
+                            if self.money >= boat_type.cost {
+                                self.money -= boat_type.cost;
+                                self.player.boat_level = boat_level;
+                                self.play_sound_for_everyone(
+                                    self.player.pos.pos,
+                                    SoundType::UpgradeBoat,
+                                );
                             }
                         }
                         if can_fish {
@@ -702,7 +677,8 @@ impl geng::State for Game {
                         // TODO: ask kuviman why we did this?
                         // kuviman answers: because we had to
                         // badcop answers: ok
-                        // why are we having a discussion in comments in source code
+                        // Nertsal: why are we having a discussion in comments in source code
+                        // kuviman: because why not
                         // self.player_control = PlayerMovementControl::GoDirection(Vec2::ZERO);
                     }
                     _ => {}

@@ -23,6 +23,7 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize)]
 pub struct BoatConfig {
+    pub name: String,
     pub cost: u32,
     pub scale: f32,
     pub shops: Vec<Vec2<f32>>,
