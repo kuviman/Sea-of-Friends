@@ -7,6 +7,53 @@ impl Game {
             rotation: 0.0,
             fov: 20.0,
         };
+
+        for fish in &self.caught_fish {
+            let (pos, rot) = if fish.player == self.player_id {
+                // Fly to the inventory
+                let Some(pos) = self.camera.world_to_screen(
+                        framebuffer.size().map(|x| x as f32),
+                        fish.caught_at.extend(0.0))
+                    else { continue; };
+                let offset = framebuffer.size().x as f32 / 2.0;
+                let pos = vec2(pos.x - offset, pos.y);
+                let t = 1.0 - fish.lifetime.min(1.0);
+                let height_parameter = 5.0;
+                let height = pos.y * (0.0 - t) * (height_parameter * (t - 1.0) - 1.0);
+                let rot = self.time.sin() + t * 3.0;
+                (vec2(t * pos.x + offset, height), rot)
+            } else {
+                // Fly to the player
+                let Some(target) = self.interpolated.get(&fish.player) else { continue; };
+                let target = target.get().pos;
+                let delta = target - fish.caught_at;
+                let length = delta.len();
+                let direction = delta / length;
+                let t = fish.lifetime.min(1.0);
+                let height_parameter = 5.0;
+                let height = (0.0 - t) * (height_parameter * (t - 1.0) - 1.0);
+                let pos = fish.caught_at + direction * t * length;
+                let pos = vec3(pos.x, pos.y, height);
+                let Some(pos) = self.camera.world_to_screen(framebuffer.size().map(|x| x as f32), pos) else {
+                    continue;
+                };
+                let rot = self.time.sin() + t * 3.0;
+                (pos, rot)
+            };
+
+            let texture = &self.assets.fishes[fish.index].texture;
+            let fish_card = draw_2d::TexturedQuad::new(
+                AABB::point(Vec2::ZERO).extend_symmetric(
+                    vec2(texture.size().x as f32 / texture.size().y as f32, 1.0) * 10.0,
+                ),
+                texture,
+            )
+            .transform(Mat3::rotate(rot))
+            .translate(pos);
+            self.geng
+                .draw_2d(framebuffer, &geng::PixelPerfectCamera, &fish_card);
+        }
+
         let size =
             (self.inventory.len() as f32 - 1.0) * 10.0 / self.assets.config.inventory_size as f32;
         let mut hovered = None;
