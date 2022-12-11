@@ -214,7 +214,7 @@ impl Game {
                             // This is water
                             self.player.fishing_state = FishingState::Waiting(bobber_pos);
                             sound_type = Some(SoundType::Splash);
-                            self.splashes.push(Splash::new(bobber_pos));
+                            self.splashes.push(Splash::new(bobber_pos, 5, 1.5));
                             self.tutorial = "left click to reel when the fish bites".to_owned();
                             self.tutorial_timer = 10.0;
                         } else {
