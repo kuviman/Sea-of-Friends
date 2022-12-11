@@ -298,7 +298,26 @@ impl Game {
                                     ObjVertex {
                                         a_v: fishing_rod_pos * (1.0 - t)
                                             + bobber_pos * t
-                                            + vec3(0.0, 0.0, (t * 2.0 - 1.0).sqr() - 1.0),
+                                            + vec3(
+                                                0.0,
+                                                0.0,
+                                                (1.0 - (t * 2.0 - 1.0).sqr()) * {
+                                                    if matches!(
+                                                        player.fishing_state,
+                                                        FishingState::Casting(_)
+                                                    ) {
+                                                        let t = self
+                                                            .player_timings
+                                                            .get(&player.id)
+                                                            .copied()
+                                                            .unwrap_or(0.0)
+                                                            .min(1.0);
+                                                        1.0 - t * 2.0
+                                                    } else {
+                                                        -1.0
+                                                    }
+                                                },
+                                            ),
                                         a_uv: Vec2::ZERO,
                                         a_vn: Vec3::ZERO,
                                     }
