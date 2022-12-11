@@ -203,6 +203,20 @@ impl Game {
                             self.player.fishing_state = FishingState::Waiting(bobber_pos);
                             sound_type = Some(SoundType::Splash);
                         } else {
+                            // TODO: make this code self explanatory
+                            for fish in &self.model.get().fishes {
+                                if (fish.pos.pos - bobber_pos).len() < 1.0 {
+                                    self.caught_fish.insert(CaughtFish {
+                                        id: fish.id,
+                                        index: fish.index,
+                                        player: self.player_id,
+                                        lifetime: 0.0,
+                                        caught_at: fish.pos.pos,
+                                    });
+                                    self.model.send(Message::Catch(fish.id));
+                                    self.play_sound_for_everyone(fish.pos.pos, SoundType::Ding);
+                                }
+                            }
                             self.player.fishing_state = FishingState::Idle;
                         }
                         // TODO: make more comments
