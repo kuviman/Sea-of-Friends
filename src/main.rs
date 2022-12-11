@@ -598,7 +598,8 @@ impl geng::State for Game {
                         }
                     }
                     geng::MouseButton::Right => {
-                        self.player_control = PlayerMovementControl::GoDirection(Vec2::ZERO);
+                        // TODO: ask kuviman why we did this?
+                        // self.player_control = PlayerMovementControl::GoDirection(Vec2::ZERO);
                     }
                     _ => {}
                 }
