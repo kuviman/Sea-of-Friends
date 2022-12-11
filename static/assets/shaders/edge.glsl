@@ -73,5 +73,8 @@ void main() {
     // streaks
     gl_FragColor = mix(gl_FragColor, vec4(1.0), clamp(pow(streaks2, 50.0), 0.0, 0.9));
     // gl_FragColor = vec4(surfaceNoiseSample);
+
+	// fade to black
+	gl_FragColor = mix(gl_FragColor, vec4(0.0, 0.0, 0.0, 1.0), clamp(pow(v_uv.y, 20.0), 0.0, 1.0));
 }
 #endif
