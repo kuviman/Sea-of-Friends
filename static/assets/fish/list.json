@@ -143,7 +143,7 @@
         "count": 9
     },
     {
-        "name": "Star Fish",
+        "name": "Star",
         "cost": 20,
         "size": 1.2,
         "spawn_circle": {
@@ -156,5 +156,33 @@
             "behavior": "Space"
         },
         "count": 100
+    },
+    {
+        "name": "Mykkyn Crab",
+        "cost": 20,
+        "size": 1.2,
+        "spawn_circle": {
+            "center": [
+                66.08869,
+                2.9950714
+            ],
+            "radius": 6.5,
+            "behavior": "Land"
+        },
+        "count": 10
+    },
+    {
+        "name": "Crab",
+        "cost": 15,
+        "size": 1.2,
+        "spawn_circle": {
+            "center": [
+                -65.93247,
+                29.724136
+            ],
+            "radius": 4.5,
+            "behavior": "Land"
+        },
+        "count": 7
     }
 ]

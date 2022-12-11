@@ -98,10 +98,10 @@ impl Model {
                 x: time.cos(),
                 y: time.sin(),
             },
-            FishBehavior::Land => Vec2 {
-                x: time.cos(),
-                y: 0.0,
-            },
+            FishBehavior::Land => {
+                let t = time + fish.id.0 as f32 * 0.12345;
+                Vec2 { x: t.cos(), y: 0.0 }
+            }
             FishBehavior::Orbit => {
                 if let Some(rev) = &spawn_circle.reversed {
                     if *rev {
@@ -157,20 +157,23 @@ impl Model {
                         && f.index == fish.index
                 })
                 .collect();
-            let mut v = Vec2::ZERO;
 
             let v0 = Self::currents(fish, delta_time, self.time);
-            let v1 = Self::flock(fish, delta_time, &nearby_fish);
-            let v2 = Self::avoid(fish, delta_time, &nearby_fish);
-            let v3 = Self::match_velocity(fish, delta_time, &nearby_fish);
-            let v4 = Self::congregate(fish, delta_time);
 
-            if FishConfigs::get().configs[fish.index].spawn_circle.behavior == FishBehavior::Space {
-                // no boids in space!
-                v = v0;
-            } else {
-                v = v0 + v1 + v2 + v3 + v4;
-            }
+            let behavior = &FishConfigs::get().configs[fish.index].spawn_circle.behavior;
+            let v = match behavior {
+                FishBehavior::Space | FishBehavior::Land => {
+                    // no boids in space!
+                    v0
+                }
+                _ => {
+                    let v1 = Self::flock(fish, delta_time, &nearby_fish);
+                    let v2 = Self::avoid(fish, delta_time, &nearby_fish);
+                    let v3 = Self::match_velocity(fish, delta_time, &nearby_fish);
+                    let v4 = Self::congregate(fish, delta_time);
+                    v0 + v1 + v2 + v3 + v4
+                }
+            };
             // let cur = Self::get_map_color(fish.pos.pos)[0];
             // if cur > 0 {
             //     if Self::get_map_color(
@@ -185,6 +188,15 @@ impl Model {
             updates.insert(fish.id, FishMovementUpdate { vel: v });
         }
         for fish in &mut self.fishes {
+            let behavior = &FishConfigs::get().configs[fish.index].spawn_circle.behavior;
+            if *behavior == FishBehavior::Land {
+                if let Some(update) = updates.get(&fish.id) {
+                    fish.pos.vel += update.vel;
+                }
+                fish.pos.vel = fish.pos.vel.clamp_len(..=0.5);
+                fish.pos.pos += fish.pos.vel * delta_time;
+                continue;
+            }
             // // Scaring
             let run_away_distance = 5.0;
             for player in &self.players {
@@ -312,11 +324,29 @@ impl Game {
             let pos = pos.get();
             let mut height = Map::get().get_height(pos.pos).max(-0.2);
             let mut rot_y = 0.0;
-            if height > 0.0 {
-                let t = self.time + fish.id.0 as f32 * 0.12345;
-                height += (t * f32::PI * 2.0).sin().abs() * 0.5 + 0.1;
-                rot_y = easy_in_out_quad((t.fract() - 0.5).abs() * 2.0) * f32::PI;
+            let mut star_rot = 0.0;
+            let behavior = &FishConfigs::get().configs[fish.index].spawn_circle.behavior;
+            let mut stand_up = false;
+            // fish flopping
+            match behavior {
+                FishBehavior::Land => {
+                    stand_up = true;
+                    height += 0.5;
+                }
+                FishBehavior::Space => {
+                    stand_up = true;
+                    star_rot = pos.rot;
+                    height += 0.5;
+                }
+                _ => {
+                    if height > 0.0 {
+                        let t = self.time + fish.id.0 as f32 * 0.12345;
+                        height += (t * f32::PI * 2.0).sin().abs() * 0.5 + 0.1;
+                        rot_y = easy_in_out_quad((t.fract() - 0.5).abs() * 2.0) * f32::PI;
+                    }
+                }
             }
+
             let texture = &self.assets.fishes[fish.index].texture;
             let matrix = Mat4::translate(
                 // {
@@ -335,10 +365,15 @@ impl Game {
                 //     pos
                 // }
                 pos.pos.extend(height),
-            ) * Mat4::rotate_z(pos.rot + f32::PI)
+            ) * Mat4::rotate_z(if stand_up { 0.0 } else { pos.rot } + f32::PI)
                 * Mat4::rotate_y(rot_y)
                 * Mat4::scale(texture.size().map(|x| x as f32 / 500.0).extend(1.0))
-                * Mat4::rotate_x(f32::PI / 2.0);
+                * Mat4::rotate_x(if stand_up {
+                    self.camera.rot_v
+                } else {
+                    f32::PI / 2.0
+                })
+                * Mat4::rotate_y(star_rot);
             instances.entry(fish.index).or_default().push(FishInstance {
                 i_model_matrix: matrix,
                 i_height: height,
