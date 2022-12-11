@@ -43,15 +43,13 @@ impl Game {
 
             let texture = &self.assets.fishes[fish.index].texture;
             let fish_card = draw_2d::TexturedQuad::new(
-                AABB::point(Vec2::ZERO).extend_symmetric(
-                    vec2(texture.size().x as f32 / texture.size().y as f32, 1.0) * 10.0,
-                ),
+                AABB::point(Vec2::ZERO)
+                    .extend_symmetric(vec2(texture.size().x as f32 / texture.size().y as f32, 1.0)),
                 texture,
             )
             .transform(Mat3::rotate(rot))
-            .translate(pos);
-            self.geng
-                .draw_2d(framebuffer, &geng::PixelPerfectCamera, &fish_card);
+            .translate(camera.screen_to_world(self.framebuffer_size, pos));
+            self.geng.draw_2d(framebuffer, &camera, &fish_card);
         }
 
         let size =
