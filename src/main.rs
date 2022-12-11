@@ -35,7 +35,9 @@ pub use splash::*;
 pub use util::*;
 
 pub const SHOPPING_DISTANCE: f32 = 2.0;
-
+pub const MUSIC_VOL: f64 = 0.18;
+pub const SPACE_MUSIC_VOL: f64 = 0.28;
+pub const FADE_DIST: f32 = 3.0;
 // TODO: write the unit tests
 pub struct Game {
     player_id: Id,
@@ -71,8 +73,15 @@ pub struct Game {
     show_names: bool,
     target_cam_distance: f32,
     show_reel_tutorial: bool,
+    music_track: MusicTrack,
+    current_music: geng::SoundEffect,
 }
 
+#[derive(Debug, PartialEq)]
+enum MusicTrack {
+    Main,
+    Space,
+}
 #[derive(Debug, Clone, HasId)]
 struct CaughtFish {
     id: Id,
@@ -89,7 +98,6 @@ impl Game {
         player_id: Id,
         model: simple_net::Remote<Model>,
     ) -> Self {
-        assets.music.play().set_volume(0.1);
         let mut land_environment: Vec<ugli::VertexBuffer<ObjInstance>> =
             (0..assets.environment.land.len())
                 .map(|_| ugli::VertexBuffer::new_static(geng.ugli(), vec![]))
@@ -250,6 +258,12 @@ impl Game {
             boat_sound_effects: HashMap::new(),
             tutorial: "left mouse to fish\nright mouse to move".to_owned(),
             tutorial_timer: 100000000.0,
+            music_track: MusicTrack::Main,
+            current_music: {
+                let mut effect = assets.music.play();
+                effect.set_volume(MUSIC_VOL);
+                effect
+            },
         }
     }
 
@@ -532,6 +546,33 @@ impl geng::State for Game {
         let delta_time = delta_time as f32;
 
         self.tutorial_timer -= delta_time;
+
+        // very good music player
+        let dist = self.player.pos.pos.len();
+        if dist > 100.0 && self.music_track == MusicTrack::Main {
+            self.current_music.stop();
+            let mut effect = self.assets.space_music.play();
+            effect.set_volume(SPACE_MUSIC_VOL);
+            self.music_track = MusicTrack::Space;
+            self.current_music = effect;
+        }
+
+        if dist > (100.0 - FADE_DIST) && self.music_track == MusicTrack::Main {
+            self.current_music
+                .set_volume(MUSIC_VOL * (1.0 - (dist - (100.0 - FADE_DIST)) / FADE_DIST) as f64);
+        }
+        if dist < 100.0 && self.music_track == MusicTrack::Space {
+            self.current_music.stop();
+            let mut effect = self.assets.music.play();
+            effect.set_volume(MUSIC_VOL);
+            self.music_track = MusicTrack::Main;
+            self.current_music = effect;
+        }
+        if dist < (100.0 + FADE_DIST) && self.music_track == MusicTrack::Space {
+            self.current_music.set_volume(
+                SPACE_MUSIC_VOL * (1.0 - ((100.0 + FADE_DIST) - dist) / FADE_DIST) as f64,
+            );
+        }
 
         if self.editing_name {
             self.camera.distance = 5.0;
