@@ -135,7 +135,7 @@ impl Game {
             self.tutorial_timer = 0.1;
         }
         if self.can_join(&mut false).is_some() {
-            self.tutorial = format!("right click to explore together");
+            self.tutorial = "right click to explore together".to_string();
             self.tutorial_timer = 0.1;
         }
         if self.tutorial_timer < 0.0 {
