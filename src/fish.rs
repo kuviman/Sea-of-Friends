@@ -67,7 +67,7 @@ impl Model {
         if height > -0.3 {
             let delta = 0.1;
             let hx = Map::get().get_height(fish.pos.pos + vec2(delta, 0.0));
-            let hy = Map::get().get_height(fish.pos.pos + vec2(delta, 0.0));
+            let hy = Map::get().get_height(fish.pos.pos + vec2(0.0, delta));
             let gradient = vec2(height - hx, height - hy);
             return gradient.normalize_or_zero() * 10.0;
         }
