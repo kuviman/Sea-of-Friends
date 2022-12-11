@@ -93,7 +93,7 @@
                 0.0,
                 0.0
             ],
-            "inner_radius": 80.0,
+            "inner_radius": 90.0,
             "radius": 95.0,
             "behavior": "Orbit"
         },

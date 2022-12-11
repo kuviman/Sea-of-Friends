@@ -62,7 +62,7 @@ impl Model {
         }
         result.sub(fish.pos.vel) / 8.0 * delta_time
     }
-    pub fn currents(fish: &Fish, delta_time: f32) -> Vec2<f32> {
+    pub fn congregate(fish: &Fish, delta_time: f32) -> Vec2<f32> {
         let height = Map::get_height(Map::get(), fish.pos.pos);
         if height > -0.3 {
             // TODO: use normals here
@@ -71,63 +71,57 @@ impl Model {
                 y: 0.0,
             };
         }
-        let fish_config = &FishConfigs::get().configs[fish.index];
-        if let Some(spawn_circle) = &fish_config.spawn_circle {
-            let dist = spawn_circle.center.sub(fish.pos.pos);
-            // We're inside our spawn circle - follow behavior rules
-            if dist.len() < spawn_circle.radius {
-                if let Some(inner_radius) = spawn_circle.inner_radius {
-                    if dist.len() < inner_radius {
-                        // Outside our designated spawn area - head home
-                        return -dist / dist.len() * (inner_radius - dist.len()) * delta_time;
-                    }
-                }
-                match &spawn_circle.behavior {
-                    FishBehavior::Idle => {
-                        return Vec2::ZERO;
-                    }
-                    FishBehavior::Orbit => {
-                        if let Some(rev) = &spawn_circle.reversed {
-                            if *rev {
-                                return Vec2 {
-                                    x: -dist.y,
-                                    y: dist.x,
-                                } / spawn_circle.radius
-                                    / 2.0;
-                            }
-                        }
-                        return Vec2 {
-                            x: dist.y,
-                            y: -dist.x,
-                        } / spawn_circle.radius
-                            / 2.0;
-                    }
-                    FishBehavior::Chaos => {
-                        let scaled_pos = fish.pos.pos / 5.0
-                            + Vec2 {
-                                x: fish.index as f32,
-                                y: (fish.index % 2) as f32,
-                            };
-                        return Vec2 {
-                            x: scaled_pos.x.cos() + scaled_pos.y.cos(),
-                            y: scaled_pos.x.sin() + scaled_pos.y.sin(),
-                        } * delta_time;
-                    }
+        let spawn_circle = &FishConfigs::get().configs[fish.index].spawn_circle;
+        let dist = spawn_circle.center.sub(fish.pos.pos);
+        // We're inside our spawn circle - follow behavior rules
+        if dist.len() < spawn_circle.radius {
+            if let Some(inner_radius) = spawn_circle.inner_radius {
+                if dist.len() < inner_radius {
+                    // Outside our designated spawn area - head home
+                    return -dist / dist.len() * (inner_radius - dist.len()) * delta_time;
                 }
             }
+        }
+        if dist.len() > spawn_circle.radius {
             // Outside our designated spawn area - head home
             return dist / dist.len() * (dist.len() - spawn_circle.radius) * delta_time;
         }
-        // No spawn circle specified - fallback to chaos
-        let scaled_pos = fish.pos.pos / 5.0
-            + Vec2 {
-                x: fish.index as f32,
-                y: (fish.index % 2) as f32,
-            };
-        Vec2 {
-            x: scaled_pos.x.cos() + scaled_pos.y.cos(),
-            y: scaled_pos.x.sin() + scaled_pos.y.sin(),
-        } * delta_time
+        Vec2::ZERO
+    }
+
+    pub fn currents(fish: &Fish, delta_time: f32) -> Vec2<f32> {
+        let spawn_circle = &FishConfigs::get().configs[fish.index].spawn_circle;
+        let dist = spawn_circle.center.sub(fish.pos.pos);
+        match spawn_circle.behavior {
+            FishBehavior::Idle => Vec2::ZERO,
+            FishBehavior::Orbit => {
+                if let Some(rev) = &spawn_circle.reversed {
+                    if *rev {
+                        return Vec2 {
+                            x: -dist.y,
+                            y: dist.x,
+                        } / spawn_circle.radius
+                            / 2.0;
+                    }
+                }
+                Vec2 {
+                    x: dist.y,
+                    y: -dist.x,
+                } / spawn_circle.radius
+                    / 2.0
+            }
+            FishBehavior::Chaos => {
+                let scaled_pos = fish.pos.pos / 5.0
+                    + Vec2 {
+                        x: fish.index as f32,
+                        y: (fish.index % 2) as f32,
+                    };
+                Vec2 {
+                    x: scaled_pos.x.cos() + scaled_pos.y.cos(),
+                    y: scaled_pos.x.sin() + scaled_pos.y.sin(),
+                } * delta_time
+            }
+        }
     }
     pub fn update_fishes(&mut self, delta_time: f32, events: &mut Vec<Event>) {
         let reeling_fishes: HashSet<Id> = self
@@ -158,9 +152,10 @@ impl Model {
             let v1 = Self::flock(fish, delta_time, &nearby_fish);
             let v2 = Self::avoid(fish, delta_time, &nearby_fish);
             let v3 = Self::match_velocity(fish, delta_time, &nearby_fish);
-            let v4 = Self::currents(fish, delta_time);
+            let v4 = Self::congregate(fish, delta_time);
+            let v5 = Self::currents(fish, delta_time);
 
-            let v = v1 + v2 + v3 + v4;
+            let v = v1 + v2 + v3 + v4 + v5;
             // let cur = Self::get_map_color(fish.pos.pos)[0];
             // if cur > 0 {
             //     if Self::get_map_color(

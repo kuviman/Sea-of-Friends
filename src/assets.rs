@@ -145,7 +145,7 @@ pub struct SpawnCircle {
 pub struct FishConfig {
     pub name: String,
     pub cost: u32,
-    pub spawn_circle: Option<SpawnCircle>,
+    pub spawn_circle: SpawnCircle,
     pub count: u32,
     pub size: f32,
 }
