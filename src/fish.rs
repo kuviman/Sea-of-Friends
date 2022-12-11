@@ -263,7 +263,7 @@ impl Model {
             if let Some(update) = updates.get(&fish.id) {
                 fish.pos.vel += update.vel;
             }
-            fish.pos.vel = fish.pos.vel.clamp_len(..=1.7);
+            fish.pos.vel = fish.pos.vel.clamp_len(..=max_speed.min(1.7));
             let new_rot = fish.pos.vel.normalize().arg();
             fish.pos.w = normalize_angle(new_rot - fish.pos.rot).clamp_abs(fish.pos.vel.len());
             if fish.pos.vel.len() < 0.2 {
