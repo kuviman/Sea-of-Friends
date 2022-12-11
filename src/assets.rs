@@ -77,24 +77,38 @@ pub struct PlayerAssets {
 
 #[derive(geng::Assets)]
 pub struct Sounds {
-    #[asset(range = "1..=5", path = "splash*.wav")]
-    pub splash: Vec<geng::Sound>,
+    #[asset(postprocess = "make_looped")]
+    pub boat_moving: geng::Sound,
     #[asset(range = "1..=5", path = "casting*.wav")]
     pub casting: Vec<geng::Sound>,
+    pub ding: geng::Sound,
+    pub drop_fish_land: geng::Sound,
+    pub drop_fish_water: geng::Sound,
+    pub enter_boat: geng::Sound,
+    pub exit_boat: geng::Sound,
+    pub sell_fish: geng::Sound,
+    pub show_fish: geng::Sound,
+    #[asset(range = "1..=5", path = "splash*.wav")]
+    pub splash: Vec<geng::Sound>,
+    pub stop_fishing: geng::Sound,
+    pub upgrade_boat: geng::Sound,
     #[asset(range = "1..=2", path = "whip*.wav")]
     pub whip: Vec<geng::Sound>,
-    pub show_fish: geng::Sound,
-    pub stop_fishing: geng::Sound,
-    pub ding: geng::Sound,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub enum SoundType {
-    Splash,
     Casting,
     Ding,
-    StopFishing,
+    DropFishLand,
+    DropFishWater,
+    EnterBoat,
+    ExitBoat,
+    SellFish,
     ShowFish,
+    Splash,
+    StopFishing,
+    UpgradeBoat,
     Whip,
 }
 

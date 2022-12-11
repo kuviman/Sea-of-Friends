@@ -18,6 +18,12 @@ impl Game {
             SoundType::StopFishing => std::slice::from_ref(&self.assets.sounds.stop_fishing),
             SoundType::ShowFish => std::slice::from_ref(&self.assets.sounds.show_fish),
             SoundType::Whip => &self.assets.sounds.whip,
+            SoundType::DropFishLand => std::slice::from_ref(&self.assets.sounds.drop_fish_land),
+            SoundType::DropFishWater => std::slice::from_ref(&self.assets.sounds.drop_fish_water),
+            SoundType::EnterBoat => std::slice::from_ref(&self.assets.sounds.enter_boat),
+            SoundType::ExitBoat => std::slice::from_ref(&self.assets.sounds.exit_boat),
+            SoundType::SellFish => std::slice::from_ref(&self.assets.sounds.sell_fish),
+            SoundType::UpgradeBoat => std::slice::from_ref(&self.assets.sounds.upgrade_boat),
         };
         let mut effect = sounds.choose(&mut global_rng()).unwrap().effect();
         effect.set_position(pos.map(|x| x as f64).extend(0.0));

@@ -76,6 +76,7 @@ impl Game {
                 hovered = Some((index, texture, pos));
             }
         }
+        let last_hovered_inventory_slot = self.hovered_inventory_slot;
         self.hovered_inventory_slot = None;
         if let Some((index, texture, pos)) = hovered {
             self.hovered_inventory_slot = Some(index);
@@ -88,6 +89,9 @@ impl Game {
             .transform(Mat3::rotate(-f32::PI / 2.0))
             .translate(pos);
             self.geng.draw_2d(framebuffer, &camera, &fish_card);
+        }
+        if self.hovered_inventory_slot.is_some() && last_hovered_inventory_slot.is_none() {
+            self.play_sound_for_everyone(self.player.pos.pos, SoundType::ShowFish);
         }
 
         self.geng.draw_2d(
