@@ -76,6 +76,12 @@ impl Model {
             let dist = spawn_circle.center.sub(fish.pos.pos);
             // We're inside our spawn circle - follow behavior rules
             if dist.len() < spawn_circle.radius {
+                if let Some(inner_radius) = spawn_circle.inner_radius {
+                    if dist.len() < inner_radius {
+                        // Outside our designated spawn area - head home
+                        return -dist / dist.len() * (inner_radius - dist.len()) * delta_time;
+                    }
+                }
                 match &spawn_circle.behavior {
                     FishBehavior::Idle => {
                         return Vec2::ZERO;
@@ -275,10 +281,16 @@ impl Game {
         for fish in &model.fishes {
             let Some(pos) = self.interpolated.get(&fish.id) else { continue };
             let pos = pos.get();
-            self.draw_fish(framebuffer, fish, &pos);
+            self.draw_fish(framebuffer, fish, &pos, -0.2);
         }
     }
-    pub fn draw_fish(&self, framebuffer: &mut ugli::Framebuffer, fish: &Fish, pos: &Position) {
+    pub fn draw_fish(
+        &self,
+        framebuffer: &mut ugli::Framebuffer,
+        fish: &Fish,
+        pos: &Position,
+        height: f32,
+    ) {
         let texture = &self.assets.fishes[fish.index].texture;
         let matrix = Mat4::translate(
             // {
@@ -296,7 +308,7 @@ impl Game {
             //     }
             //     pos
             // }
-            pos.pos.extend(-0.2),
+            pos.pos.extend(height),
         ) * Mat4::rotate_z(pos.rot + f32::PI)
             * Mat4::scale(texture.size().map(|x| x as f32 / 500.0).extend(1.0))
             * Mat4::rotate_x(f32::PI / 2.0);
