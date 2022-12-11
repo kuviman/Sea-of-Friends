@@ -277,4 +277,54 @@ impl Game {
             .hovered_inventory_slot
             .and_then(|index| self.inventory.get(index).copied());
     }
+
+    pub fn can_join(&self, seated: &mut bool) -> Option<(Player, usize)> {
+        let pos = self.world_pos(self.geng.window().mouse_pos().map(|x| x as f32));
+        let land = |pos| Map::get().get_height(pos) > SHORE_HEIGHT;
+        if self.player.seated.is_none() && land(self.player.pos.pos) {
+            for other_player in &self.model.get().players {
+                if other_player.id == self.player_id {
+                    continue;
+                }
+                if other_player.seated.is_some() {
+                    continue;
+                }
+                let Some(p) = self.interpolated.get(&other_player.id) else { continue };
+                if land(p.get().pos) {
+                    continue;
+                }
+
+                let mut other_player_radius = 1.0;
+                if other_player.boat_level > 0 {
+                    other_player_radius *=
+                        self.assets.config.boat_types[(other_player.boat_level - 1) as usize].scale;
+                }
+                // Make sure we are in range of their boat
+                if (p.get().pos - self.player.pos.pos).len() > (2.5 + other_player_radius / 2.0) {
+                    continue;
+                }
+
+                // check if we clicked within bounds of other_player
+                if (p.get().pos - pos).len() < other_player_radius {
+                    *seated = true;
+                    let mut seats: HashSet<usize> = (1..self.assets.ships
+                        [other_player.boat_level.max(1) as usize - 1]
+                        .seats
+                        .len())
+                        .collect();
+                    for p in &self.model.get().players {
+                        if let Some(seated) = p.seated {
+                            if seated.player == other_player.id {
+                                seats.remove(&seated.seat);
+                            }
+                        }
+                    }
+                    if let Some(seat) = seats.into_iter().next() {
+                        return Some((other_player.clone(), seat));
+                    }
+                }
+            }
+        }
+        None
+    }
 }

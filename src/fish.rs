@@ -325,7 +325,7 @@ impl Game {
             let mut height = Map::get().get_height(pos.pos).max(-0.2);
             let mut rot_y = 0.0;
             let mut star_rot = 0.0;
-            let behavior = &FishConfigs::get().configs[fish.index].spawn_circle.behavior;
+            let behavior = &self.assets.fishes[fish.index].config.spawn_circle.behavior;
             let mut stand_up = false;
             // fish flopping
             match behavior {

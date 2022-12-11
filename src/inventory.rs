@@ -134,6 +134,10 @@ impl Game {
             self.tutorial = format!("click to buy {} for ${}", config.name, config.cost);
             self.tutorial_timer = 0.1;
         }
+        if self.can_join(&mut false).is_some() {
+            self.tutorial = format!("right click to explore together");
+            self.tutorial_timer = 0.1;
+        }
         if self.tutorial_timer < 0.0 {
             self.tutorial = "".to_owned();
         }
