@@ -16,13 +16,17 @@ const DROPLET_COLOR: Rgba<f32> = Rgba {
 pub struct Splash {
     pub position: Vec2<f32>,
     pub lifetime: f32,
+    pub droplets: usize,
+    pub speed: f32,
 }
 
 impl Splash {
-    pub fn new(position: Vec2<f32>) -> Self {
+    pub fn new(position: Vec2<f32>, droplets: usize, speed: f32) -> Self {
         Self {
             position,
             lifetime: 0.0,
+            droplets,
+            speed,
         }
     }
 }
@@ -36,7 +40,7 @@ impl Game {
 
     pub fn draw_splash(&self, framebuffer: &mut ugli::Framebuffer, splash: &Splash) {
         // Expanding wave
-        let matrix = Mat4::translate(splash.position.extend(0.0)) * Mat4::rotate_x(f32::PI / 2.0);
+        let matrix = Mat4::translate(splash.position.extend(0.01)) * Mat4::rotate_x(f32::PI / 2.0);
         ugli::draw(
             framebuffer,
             &self.assets.shaders.wave,
@@ -52,7 +56,7 @@ impl Game {
             ),
             ugli::DrawParameters {
                 blend_mode: Some(ugli::BlendMode::default()),
-                // depth_func: Some(ugli::DepthFunc::Less),
+                depth_func: Some(ugli::DepthFunc::Less),
                 ..default()
             },
         );
@@ -68,8 +72,8 @@ impl Game {
                 fov: 20.0,
             };
             let pos = camera.screen_to_world(framebuffer.size().map(|x| x as f32), pos);
-            for i in 0..5 {
-                let angle = (i as f32 - 2.5) * f32::PI / 6.0;
+            for i in 0..splash.droplets {
+                let angle = (i as f32 - splash.droplets as f32 / 2.0) * f32::PI / 6.0;
                 let (vx, vy) = angle.sin_cos();
                 let x = vx * splash.lifetime;
                 let y = vy * 2.0 * (0.0 - splash.lifetime) * (splash.lifetime - 1.0);

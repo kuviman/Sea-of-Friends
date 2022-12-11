@@ -60,6 +60,7 @@ pub struct Game {
     money: u32,
     fishdex: HashSet<FishType>,
     splashes: Vec<Splash>,
+    players_trail_times: HashMap<Id, f32>,
     boat_sound_effects: HashMap<Id, geng::SoundEffect>,
     tutorial: String,
     tutorial_timer: f32,
@@ -178,6 +179,7 @@ impl Game {
             money: 0,
             fishdex: HashSet::new(),
             splashes: Vec::new(),
+            players_trail_times: HashMap::new(),
             boat_sound_effects: HashMap::new(),
             tutorial: "left mouse to fish\nright mouse to move".to_owned(),
             tutorial_timer: 100000000.0,
@@ -502,6 +504,22 @@ impl geng::State for Game {
         self.update_my_player(delta_time);
         self.update_local_player_data(delta_time);
 
+        let model = self.model.get();
+        for player in &model.players {
+            if Map::get().get_height(player.pos.pos) < 0.0
+                && player.seated.is_none()
+                && player.pos.vel.len() > 1.0
+            {
+                // Captain moving
+                let time = self.players_trail_times.entry(player.id).or_insert(0.0);
+                *time -= delta_time;
+                if *time <= 0.0 {
+                    *time += 0.2;
+                    self.splashes.push(Splash::new(player.pos.pos, 0, 0.5));
+                }
+            }
+        }
+
         for fish in &mut self.caught_fish {
             fish.lifetime += delta_time;
             if fish.lifetime >= 1.0 && fish.player == self.player_id {
@@ -530,7 +548,7 @@ impl geng::State for Game {
         }
 
         for splash in &mut self.splashes {
-            splash.lifetime += delta_time * 1.5;
+            splash.lifetime += delta_time * splash.speed;
         }
         self.splashes.retain(|splash| splash.lifetime < 1.0);
     }
