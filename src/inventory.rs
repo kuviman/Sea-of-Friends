@@ -18,7 +18,7 @@ impl Game {
                 let offset = framebuffer.size().x as f32 / 2.0;
                 let pos = vec2(pos.x - offset, pos.y);
                 let t = 1.0 - fish.lifetime.min(1.0);
-                let height_parameter = 3.0;
+                let height_parameter = 5.0;
                 let height = pos.y * (0.0 - t) * (height_parameter * (t - 1.0) - 1.0);
                 let rot = self.time.sin() + t * 3.0;
                 (vec2(t * pos.x + offset, height), rot)

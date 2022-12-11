@@ -420,7 +420,7 @@ impl geng::State for Game {
 
         for fish in &mut self.caught_fish {
             fish.lifetime += delta_time;
-            if fish.lifetime >= 1.0 && fish.player == self.player_id {
+            if fish.lifetime >= 1.0 {
                 self.fishdex.insert(fish.index);
                 self.inventory.push(fish.index);
             }
@@ -523,53 +523,111 @@ impl geng::State for Game {
                     }
                     geng::MouseButton::Right => {
                         let mut teleport = None;
-                        if (pos - self.player.pos.pos).len() < 3.0 {
-                            let land = |pos| Map::get().get_height(pos) > SHORE_HEIGHT;
-                            let mut seated = false;
-                            if self.player.seated.is_none() && land(self.player.pos.pos) {
-                                for other_player in &self.model.get().players {
-                                    if other_player.id == self.player_id {
-                                        continue;
-                                    }
-                                    if other_player.seated.is_some() {
-                                        continue;
-                                    }
-                                    let Some(p) = self.interpolated.get(&other_player.id) else { continue };
-                                    if land(p.get().pos) {
-                                        continue;
-                                    }
-                                    if (p.get().pos - pos).len() < 1.0 {
-                                        seated = true;
-                                        let mut seats: HashSet<usize> = (1..self.assets.ships
-                                            [other_player.boat_level.max(1) as usize - 1]
-                                            .seats
-                                            .len())
-                                            .collect();
-                                        for p in &self.model.get().players {
-                                            if let Some(seated) = p.seated {
-                                                if seated.player == other_player.id {
-                                                    seats.remove(&seated.seat);
-                                                }
+                        let land = |pos| Map::get().get_height(pos) > SHORE_HEIGHT;
+                        let mut seated = false;
+                        if self.player.seated.is_none() && land(self.player.pos.pos) {
+                            for other_player in &self.model.get().players {
+                                if other_player.id == self.player_id {
+                                    continue;
+                                }
+                                if other_player.seated.is_some() {
+                                    continue;
+                                }
+                                let Some(p) = self.interpolated.get(&other_player.id) else { continue };
+                                if land(p.get().pos) {
+                                    continue;
+                                }
+
+                                let mut other_player_radius = 1.0;
+                                if other_player.boat_level > 0 {
+                                    other_player_radius *= self.assets.config.boat_types
+                                        [(other_player.boat_level - 1) as usize]
+                                        .scale;
+                                }
+                                // Make sure we are in range of their boat
+                                if (p.get().pos - self.player.pos.pos).len()
+                                    > (2.5 + other_player_radius / 2.0)
+                                {
+                                    continue;
+                                }
+
+                                // check if we clicked within bounds of other_player
+                                if (p.get().pos - pos).len() < other_player_radius {
+                                    seated = true;
+                                    let mut seats: HashSet<usize> = (1..self.assets.ships
+                                        [other_player.boat_level.max(1) as usize - 1]
+                                        .seats
+                                        .len())
+                                        .collect();
+                                    for p in &self.model.get().players {
+                                        if let Some(seated) = p.seated {
+                                            if seated.player == other_player.id {
+                                                seats.remove(&seated.seat);
                                             }
                                         }
-                                        if let Some(seat) = seats.into_iter().next() {
-                                            self.player.seated = Some(Seated {
-                                                player: other_player.id,
-                                                seat,
-                                            });
-                                        }
+                                    }
+                                    if let Some(seat) = seats.into_iter().next() {
+                                        self.player.seated = Some(Seated {
+                                            player: other_player.id,
+                                            seat,
+                                        });
                                     }
                                 }
                             }
-                            if self.player.seated.is_some() && land(pos) {
-                                self.player.seated = None;
-                                teleport = Some(pos);
+                        }
+                        let raycast = |to, from| {
+                            let mut hit: Option<Vec2<f32>> = None;
+                            let raycast_resolution = 100.0;
+                            let segment = (to - from) / raycast_resolution;
+                            // We are trying to go onto land
+                            if land(to) {
+                                for i in 0..(raycast_resolution as u32) {
+                                    let check_pos = from + segment * i as f32;
+                                    if land(check_pos) && hit.is_none() {
+                                        hit = Some(check_pos + segment * 2.0); // Add a little bit of buffer to the result
+                                    }
+                                    // we passed clear through an island - invalidate the hit
+                                    if !land(check_pos) && hit.is_some() {
+                                        hit = None;
+                                    }
+                                }
+                            } else {
+                                // We are trying to go into the water
+                                for i in 0..(raycast_resolution as u32) {
+                                    let check_pos = from + segment * i as f32;
+                                    if !land(check_pos) {
+                                        hit = Some(check_pos + segment * 2.0); // Add a little bit of buffer to the result
+                                        break;
+                                    }
+                                }
                             }
-                            if !seated
-                                && self.player.boat_level > 0
-                                && land(pos) != land(self.player.pos.pos)
-                            {
-                                teleport = Some(pos);
+                            hit
+                        };
+                        if self.player.seated.is_some() && land(pos) {
+                            // teleport between land <> water (friend's boat)
+                            if let Some(hit_pos) = raycast(pos, self.player.pos.pos) {
+                                // Verify the hit pos is within our reach
+                                if hit_pos.sub(self.player.pos.pos).len() < 4.0 {
+                                    teleport = Some(hit_pos);
+                                    self.player.seated = None;
+                                }
+                            }
+                        }
+                        if !seated
+                            && self.player.boat_level > 0
+                            && land(pos) != land(self.player.pos.pos)
+                        {
+                            // teleport between land <> water (our own boat)
+                            let mut player_radius = 1.0;
+                            player_radius *= self.assets.config.boat_types
+                                [(self.player.boat_level - 1) as usize]
+                                .scale;
+
+                            if let Some(hit_pos) = raycast(pos, self.player.pos.pos) {
+                                // Verify the hit pos is within our reach
+                                if hit_pos.sub(self.player.pos.pos).len() < player_radius + 0.5 {
+                                    teleport = Some(hit_pos);
+                                }
                             }
                         }
                         if let Some(pos) = teleport {
@@ -598,7 +656,8 @@ impl geng::State for Game {
                         }
                     }
                     geng::MouseButton::Right => {
-                        self.player_control = PlayerMovementControl::GoDirection(Vec2::ZERO);
+                        // TODO: ask kuviman why we did this?
+                        // self.player_control = PlayerMovementControl::GoDirection(Vec2::ZERO);
                     }
                     _ => {}
                 }
