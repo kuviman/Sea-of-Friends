@@ -151,7 +151,7 @@
                 0.0,
                 0.0
             ],
-            "inner_radius": 110.0,
+            "inner_radius": 120.0,
             "radius": 200.0,
             "behavior": "Space"
         },
