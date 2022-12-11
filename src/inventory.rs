@@ -68,7 +68,7 @@ impl Game {
                     .extend_symmetric(vec2(texture.size().x as f32 / texture.size().y as f32, 1.0)),
                 texture,
             )
-            .transform(Mat3::rotate(f32::PI / 2.0))
+            .transform(Mat3::rotate(-f32::PI / 2.0))
             .translate(pos);
             self.geng.draw_2d(framebuffer, &camera, &fish_card);
             if fish_card.bounding_box().contains(camera.screen_to_world(
@@ -87,7 +87,7 @@ impl Game {
                 ),
                 texture,
             )
-            .transform(Mat3::rotate(f32::PI / 2.0))
+            .transform(Mat3::rotate(-f32::PI / 2.0))
             .translate(pos);
             self.geng.draw_2d(framebuffer, &camera, &fish_card);
         }

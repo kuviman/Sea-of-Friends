@@ -5,6 +5,7 @@ pub struct Shaders {
     pub water: ugli::Program,
     pub land: ugli::Program,
     pub land2: ugli::Program,
+    pub fish: ugli::Program,
     pub obj: ugli::Program,
     pub obj2: ugli::Program,
     pub edge: ugli::Program,
@@ -135,6 +136,7 @@ pub enum FishBehavior {
 pub struct SpawnCircle {
     pub center: Vec2<f32>,
     pub radius: f32,
+    pub inner_radius: Option<f32>,
     pub behavior: FishBehavior,
     pub reversed: Option<bool>,
 }

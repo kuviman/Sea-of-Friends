@@ -67,18 +67,25 @@ impl Model {
                 for i in 0..FishConfigs::get().configs.len() {
                     let fish_config = &FishConfigs::get().configs[i];
                     for j in 0..fish_config.count {
-                        let mut D: f32 = 10.0;
+                        let mut radius: f32 = 10.0;
                         let mut center = Vec2::ZERO;
+                        let mut inner_radius: f32 = 0.0;
                         if let Some(spawn_circle) = &fish_config.spawn_circle {
-                            D = spawn_circle.radius;
+                            radius = spawn_circle.radius;
                             center = spawn_circle.center;
+                            if let Some(r) = spawn_circle.inner_radius {
+                                inner_radius = r;
+                            }
                         }
+                        // polar coordinates because we're fancy
+                        radius = global_rng().gen_range(inner_radius..radius);
+                        let angle = global_rng().gen_range(0.0..(f32::PI * 2.0));
                         fishes.insert(Fish::new(
                             id_gen.gen(),
                             i,
                             vec2(
-                                center.x + global_rng().gen_range(-D..D),
-                                center.y + global_rng().gen_range(-D..D),
+                                center.x + radius * angle.cos(),
+                                center.y + radius * angle.sin(),
                             ),
                         ))
                     }

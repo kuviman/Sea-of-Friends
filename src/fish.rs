@@ -302,7 +302,7 @@ impl Game {
             * Mat4::rotate_x(f32::PI / 2.0);
         ugli::draw(
             framebuffer,
-            &self.assets.shaders.obj,
+            &self.assets.shaders.fish,
             ugli::DrawMode::TriangleFan,
             &self.quad,
             (
@@ -310,6 +310,7 @@ impl Game {
                     u_model_matrix: matrix,
                     u_texture: texture,
                     u_color: Rgba::WHITE,
+                    height: height,
                 },
                 geng::camera3d_uniforms(&self.camera, self.framebuffer_size),
             ),

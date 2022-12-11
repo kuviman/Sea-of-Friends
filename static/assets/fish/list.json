@@ -69,5 +69,34 @@
             "behavior": "Chaos"
         },
         "count": 40
+    },
+    {
+        "name": "Spade Fish",
+        "cost": 5,
+        "size": 1,
+        "spawn_circle": {
+            "center": [
+                -33.377087,
+                -6.720478
+            ],
+            "radius": 30.0,
+            "behavior": "Chaos"
+        },
+        "count": 40
+    },
+    {
+        "name": "Snitch",
+        "cost": 50,
+        "size": 0.8,
+        "spawn_circle": {
+            "center": [
+                0.0,
+                0.0
+            ],
+            "inner_radius": 80.0,
+            "radius": 95.0,
+            "behavior": "Orbit"
+        },
+        "count": 2
     }
 ]
