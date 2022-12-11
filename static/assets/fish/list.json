@@ -1,29 +1,41 @@
 [
     {
-        "name": "blue",
+        "name": "Submarine",
         "cost": 1,
+        "size": 1.5,
         "spawn_circle": {
-            "center": [11.555296, 19.253475],
+            "center": [
+                11.555296,
+                19.253475
+            ],
             "radius": 8,
             "behavior": "Idle"
         },
         "count": 15
     },
     {
-        "name": "clown",
+        "name": "Tropical Fish",
         "cost": 2,
+        "size": 1,
         "spawn_circle": {
-            "center": [-4.3396535, 6.787462],
+            "center": [
+                -4.3396535,
+                6.787462
+            ],
             "radius": 15.0,
             "behavior": "Orbit"
         },
         "count": 30
     },
     {
-        "name": "gold",
+        "name": "Old Wife Fish",
         "cost": 3,
+        "size": 1,
         "spawn_circle": {
-            "center": [-26.169292, 32.56167],
+            "center": [
+                -26.169292,
+                32.56167
+            ],
             "radius": 9.0,
             "behavior": "Orbit",
             "reversed": true
@@ -31,20 +43,28 @@
         "count": 20
     },
     {
-        "name": "gray",
+        "name": "Mousefish",
         "cost": 4,
+        "size": 1,
         "spawn_circle": {
-            "center": [-35.06108, 10.414175],
+            "center": [
+                -35.06108,
+                10.414175
+            ],
             "radius": 15.0,
             "behavior": "Chaos"
         },
         "count": 25
     },
     {
-        "name": "green",
+        "name": "Spade Fish",
         "cost": 5,
+        "size": 1,
         "spawn_circle": {
-            "center": [-33.377087, -6.720478],
+            "center": [
+                -33.377087,
+                -6.720478
+            ],
             "radius": 30.0,
             "behavior": "Chaos"
         },

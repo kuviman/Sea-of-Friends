@@ -145,6 +145,7 @@ pub struct FishConfig {
     pub cost: u32,
     pub spawn_circle: Option<SpawnCircle>,
     pub count: u32,
+    pub size: f32,
 }
 
 pub struct FishAssets {

@@ -43,12 +43,14 @@ impl Model {
     }
     pub fn avoid(fish: &Fish, delta_time: f32, nearby_fish: &Vec<&Fish>) -> Vec2<f32> {
         let mut result: Vec2<f32> = Vec2::ZERO;
+        let fish_size = FishConfigs::get().configs[fish.index].size;
         for fish2 in nearby_fish {
-            if fish2.pos.pos.sub(fish.pos.pos).len() < 1.0 {
+            if fish2.pos.pos.sub(fish.pos.pos).len() < fish_size {
                 result -= fish2.pos.pos - fish.pos.pos;
             }
         }
-        result * delta_time
+        let fish_config = &FishConfigs::get().configs[fish.index];
+        result * delta_time * fish_size
     }
     pub fn match_velocity(fish: &Fish, delta_time: f32, nearby_fish: &Vec<&Fish>) -> Vec2<f32> {
         let mut result: Vec2<f32> = Vec2::ZERO;
@@ -319,7 +321,7 @@ impl Game {
             //     pos
             // }
             pos.pos.extend(height),
-        ) * Mat4::rotate_z(pos.rot)
+        ) * Mat4::rotate_z(pos.rot + f32::PI)
             * Mat4::scale(texture.size().map(|x| x as f32 / 500.0).extend(1.0))
             * Mat4::rotate_x(f32::PI / 2.0);
         ugli::draw(
