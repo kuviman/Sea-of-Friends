@@ -1,0 +1,15 @@
+name: CI
+on: workflow_dispatch
+
+jobs:
+  reboot:
+    name: Reboot
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reboot server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: systemctl --user restart sea-of-friends
