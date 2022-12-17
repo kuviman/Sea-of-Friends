@@ -1,4 +1,4 @@
-name: CI
+name: Reboot server
 on: workflow_dispatch
 
 jobs:
